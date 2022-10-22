@@ -93,7 +93,20 @@ def page_to_ads(page_content):
 def get_dict_from_ad_block(block):
     """Funkcija iz niza za posamezen oglasni blok izlušči podatke o imenu, ceni
     in opisu ter vrne slovar, ki vsebuje ustrezne podatke."""
-    raise NotImplementedError()
+    vzorec_oglasa= re.compile(
+        r'<h3 class="entity-title"><a.*?href=".*?">(?P<ime>.*?)</a></h3>.*?'
+        r'<div class="entity-pub-date">.*?pubdate="pubdate">(?P<dat>.*?)</time>.*?'
+        r'<div class="entity-prices">.*?price--hrk">(?P<cena>.*?)</strong>',
+        flags=re.DOTALL)
+    oglas = vzorec_oglasa.search(block).groupdict()
+    if '<span class="currency">' in oglas['cena']:
+       novo = oglas['cena'].strip().split(';')
+       oglas['cena'] = novo[0].partition('&')[0]+'€'
+    vzorec_lokacija = re.compile(r'<span class=.*?Lokacija:.*?</span>(.*?)<br />', flags=re.DOTALL)
+    if vzorec_lokacija.search(block) != None:
+        oglas['lokacija'] = vzorec_lokacija.findall(block)[0]
+    return oglas
+
 
 
 # Definirajte funkcijo, ki sprejme ime in lokacijo datoteke, ki vsebuje
@@ -157,7 +170,7 @@ def main(redownload=True, reparse=True):
     # Iz lokalne (html) datoteke preberemo podatke
     read_file_to_string(cat_directory, frontpage_filename)
     # Podatke preberemo v lepšo obliko (seznam slovarjev)
-
+  
     # Podatke shranimo v csv datoteko
 
     # Dodatno: S pomočjo parametrov funkcije main omogoči nadzor, ali se
@@ -168,3 +181,6 @@ def main(redownload=True, reparse=True):
 
 if __name__ == '__main__':
     main()
+
+lista = read_file_to_string(cat_directory, frontpage_filename)
+k = page_to_ads(lista)
