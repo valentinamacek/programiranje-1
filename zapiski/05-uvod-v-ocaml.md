@@ -179,7 +179,7 @@ Na voljo imamo tudi običajne relacije za primerjavo:
 3 < 5 || 3 >= 5
 ```
 
-Za primerjavo enakosti uporabljamo operaciji `=` in `<>`, ki argumente primerjata glede na vrednosti. Na voljo sta tudi primerjavi `==` in `!=`, ki gledata identičnost argumentov in ju uporabljamo le takrat, kadar smo v to popolnoma prepričani, saj nam sicer dajeta nepričakovane odgovore:
+Za primerjavo enakosti uporabljamo operaciji `=` in `<>`(razlicno od), ki argumente primerjata glede na vrednosti. Na voljo sta tudi primerjavi `==` in `!=`, ki gledata identičnost argumentov in ju uporabljamo le takrat, kadar smo v to popolnoma prepričani, saj nam sicer dajeta nepričakovane odgovore:
 
 ```{code-cell}
 "A" == "A"

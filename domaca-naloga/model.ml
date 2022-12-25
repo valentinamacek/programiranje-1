@@ -95,9 +95,14 @@ let grid_of_string cell_of_char str =
 
 (* Model za vhodne probleme *)
 
-type problem = { initial_grid : int option grid }
+type problem = { initial_grid : int option grid } 
 
-let print_problem problem : unit = failwith "TODO"
+let print_problem problem : unit = 
+  print_grid (
+    fun c -> match c with 
+      | None -> " " 
+      | Some i -> string_of_int i
+  ) problem
 
 let problem_of_string str =
   let cell_of_char = function
@@ -111,6 +116,6 @@ let problem_of_string str =
 
 type solution = int grid
 
-let print_solution solution = failwith "TODO"
+let print_solution solution = failwith "TODO" (*ko izpise ni vec praznih placov*)
 
-let is_valid_solution problem solution = failwith "TODO"
+let is_valid_solution problem solution = failwith "TODO" ()

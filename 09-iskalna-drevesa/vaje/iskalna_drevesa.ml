@@ -5,7 +5,9 @@
  bodisi prazna, bodisi pa vsebujejo podatek in imajo dve (morda prazni)
  poddrevesi. Na tej točki ne predpostavljamo ničesar drugega o obliki dreves.
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
-
+type 'a tree = 
+| Prazen
+| Vozlisce of (('a tree) * 'a * ('a tree))
 
 (*----------------------------------------------------------------------------*]
  Definirajmo si testni primer za preizkušanje funkcij v nadaljevanju. Testni
@@ -17,6 +19,9 @@
        /   / \
       0   6   11
 [*----------------------------------------------------------------------------*)
+let leaf x = Vozlisce(Prazen, x, Prazen)
+
+let drevo = Vozlisce(Vozlisce((leaf 0), 2, Prazen),5,Vozlisce((leaf 6), 7, (leaf 11)) )
 
 
 (*----------------------------------------------------------------------------*]
@@ -32,6 +37,9 @@
  Node (Node (Node (Empty, 11, Empty), 7, Node (Empty, 6, Empty)), 5,
  Node (Empty, 2, Node (Empty, 0, Empty)))
 [*----------------------------------------------------------------------------*)
+let rec mirror = function
+     | Prazen -> Prazen 
+     | Vozlisce(levo, x, desno ) -> Vozlisce( mirror (desno) , x, mirror (levo))
 
 
 (*----------------------------------------------------------------------------*]
@@ -43,7 +51,10 @@
  # size test_tree;;
  - : int = 6
 [*----------------------------------------------------------------------------*)
-
+let rec height = function
+    | Prazen -> 0
+    | Vozlisce(levo, x, desno) -> max (height levo) (height desno) + 1
+    
 
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tree f tree] preslika drevo v novo drevo, ki vsebuje podatke
@@ -54,7 +65,9 @@
  Node (Node (Node (Empty, false, Empty), false, Empty), true,
  Node (Node (Empty, true, Empty), true, Node (Empty, true, Empty)))
 [*----------------------------------------------------------------------------*)
-
+let rec map f = function
+    | Prazen -> Prazen
+    | Vozlisce(levo, x, desno) -> Vozlisce( map  f levo, f x, map f desno )
 
 (*----------------------------------------------------------------------------*]
  Funkcija [list_of_tree] pretvori drevo v seznam. Vrstni red podatkov v seznamu
@@ -63,8 +76,17 @@
  # list_of_tree test_tree;;
  - : int list = [0; 2; 5; 6; 7; 11]
 [*----------------------------------------------------------------------------*)
+let rec list_of_tree = function
+    | Prazen -> []
+    | Vozlisce(levo, x, desno) -> (x :: []) @ (list_of_tree (levo) ) @ (list_of_tree (desno))
 
-
+let is_list_ordered sez = 
+     let rec ordered = function
+         | [] -> true
+         | _ :: [] -> true
+         | x :: y :: tail -> if x >= y then ordered (y :: tail) else false
+     in 
+     ordered sez
 (*----------------------------------------------------------------------------*]
  Funkcija [is_bst] preveri ali je drevo binarno iskalno drevo (Binary Search 
  Tree, na kratko BST). Predpostavite, da v drevesu ni ponovitev elementov, 
@@ -75,6 +97,7 @@
  # test_tree |> mirror |> is_bst;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
+let is_bst t = 
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -90,7 +113,10 @@
  # member 3 test_tree;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
-
+let member x = function 
+    | Prazen -> false
+    | Vozlisce(_, s, _) -> if x = s then true
+     
 
 (*----------------------------------------------------------------------------*]
  Funkcija [member2] ne privzame, da je drevo bst.
@@ -98,6 +124,9 @@
  Opomba: Premislte kolikšna je časovna zahtevnost funkcije [member] in kolikšna
  funkcije [member2] na drevesu z n vozlišči, ki ima globino log(n). 
 [*----------------------------------------------------------------------------*)
+let rec member2 x = function
+    | Prazen -> false
+    | Vozlisce(levo, x, desno) -> x = y || member2 x levo || member2 x desno
 
 
 (*----------------------------------------------------------------------------*]

@@ -1,5 +1,10 @@
 
 (* ========== Vaja 1: Uvod v OCaml  ========== *)
+let revers sez = 
+  let rec revers_aux acc = function
+    | [] -> acc
+    | x :: xs -> revers_aux (x :: acc) (xs)
+in revers_aux [] sez
 
 (*----------------------------------------------------------------------------*]
  Funkcija [square] vrne kvadrat podanega celega števila.
@@ -111,14 +116,23 @@ let rec insert x k = function
  # divide 7 [1; 2; 3; 4; 5];;
  - : int list * int list = ([1; 2; 3; 4; 5], [])
 [*----------------------------------------------------------------------------*)
-let rec divide k lst =
+let divide k lst = 
+  let rec divide_aux q prvi sez = 
+      if q<= 0 then ( revers (prvi) , sez) else
+        if sez = [] && q> 0 then (revers (prvi), sez) else
+          match sez with 
+          | [] -> ([], [])
+          | x :: xs -> divide_aux (q-1) (x::prvi) xs 
+in divide_aux k [] lst
+          
+  (* let rec divide k lst =
   match (k, lst) with
   | (_,[]) -> ([], [])
   | (k, lst) when k<= 0 -> ([], lst)
   | (k, h :: tail) -> 
       let (left, right) = divide (k-1) tail 
       in 
-      (h :: left, right)
+      (h :: left, right) *)
   
 
 
@@ -130,7 +144,9 @@ let rec divide k lst =
 - : int list = [3; 4; 5; 1; 2]
   [*----------------------------------------------------------------------------*)
 
-let rec rotate = ()
+let rec rotate n = function
+   | [] -> []
+   | x ::xs -> if n<=0 then x::xs else rotate (n-1) (xs @ [x])
 
 (*----------------------------------------------------------------------------*]
  Funkcija [remove x list] iz seznama izbriše vse pojavitve elementa [x].
@@ -153,11 +169,11 @@ let rec remove k = function
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
-let rec is_palindrome = function
-  | obrnjen ( xs ) -> if obrnjen ( xs ) = xs 
-and obrnjen = function
-  | x :: [] -> x :: [] 
-  | 
+
+
+let is_palindrome sez = 
+  if revers sez = sez then true
+  else  false
 
 (*----------------------------------------------------------------------------*]
  Funkcija [max_on_components] sprejme dva seznama in vrne nov seznam, katerega
@@ -168,8 +184,13 @@ and obrnjen = function
  - : int list = [5; 4; 3; 3; 4]
 [*----------------------------------------------------------------------------*)
 
-    let rec max_on_components = ()
-
+    let max_on_components sez1 sez2 = 
+      let rec max_aux acc = function
+       | ([],_)|(_, []) -> revers (acc)
+       | (x::xs, y::ys) -> if x>= y then max_aux (x::acc) (xs, ys) 
+         else 
+         max_aux (y::acc) (xs,ys)
+    in max_aux [] (sez1, sez2)
 (*----------------------------------------------------------------------------*]
  Funkcija [second_largest] vrne drugo največjo vrednost v seznamu. Pri tem se
  ponovitve elementa štejejo kot ena vrednost. Predpostavimo, da ima seznam vsaj
@@ -179,6 +200,19 @@ and obrnjen = function
  # second_largest [1; 10; 11; 11; 5; 4; 10];;
  - : int = 10
 [*----------------------------------------------------------------------------*)
+let najvecja_vrednost sez = 
+  let rec najvecja_aux max novi_sez = function
+     | [] -> (max, novi_sez)
+     | x :: xs -> if x > max then najvecja_aux (x) (novi_sez) xs else 
+      if x <> max then najvecja_aux (max) (x::novi_sez) xs
+      else najvecja_aux (max) (novi_sez) xs
+in najvecja_aux 0 [] sez
 
-let rec second_largest = ()
+let rec second_largest sez = 
+  match najvecja_vrednost sez with 
+  | (0,_) -> 0
+  | (y, ys) -> 
+    match najvecja_vrednost ys with
+    | (i, _) -> i
+
 

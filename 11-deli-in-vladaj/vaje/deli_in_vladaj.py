@@ -82,6 +82,25 @@
 #     [1, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7, 10]
 #
 ###############################################################################
+def merge(target, list_1, list_2):
+    #pointer za eno in za drugo
+    i2 = 0
+    i1 = 0
+    #v targetu smo na i1 + i2
+    while i1 < len(list_1) and i2 < len(list_2) :
+         if list_1[i1] <= list_2[i2]:
+            target[i1 + i2] = list_1[i1]
+            i1 += 1
+         else:
+            target[i1 + i2] = list_2[i2]
+            i2 += 1
+    # ko bo prsu do sem bo zih en ze izpraznjen
+    while  i1 < len(list_1):
+        target[i1 + i2] = list_1[i1]
+        i1 += 1
+    while  i2 < len(list_2):
+        target[i1 + i2] = list_1[i2]
+        i2 += 1
 
 
 ###############################################################################

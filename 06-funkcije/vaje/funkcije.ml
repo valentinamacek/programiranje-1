@@ -112,16 +112,14 @@ let rec map_tlrec f sez =
  - : int list = [0; 1; 2; 5; 6; 7]
 [*----------------------------------------------------------------------------*)
 let mapi f sez = 
-  let rec mapi_aux acc index = function 
+  let rec mapi_aux f acc index = function 
     | []-> reverse2 acc
-    | x :: xs -> mapi_aux ((f x index):: acc) (index + 1 ) (xs)
-  in 
-  mapi_aux [] 0 sez
+    | x :: xs -> mapi_aux f ((f x index):: acc) (index + 1 ) (xs)
+  in mapi_aux (f) ([]) (0) (sez)
       
     
 
-  
-  
+
 
 (*----------------------------------------------------------------------------*]
  Funkcija [zip] sprejme dva seznama in vrne seznam parov istoležnih
@@ -217,7 +215,7 @@ let rec fold_left_no_acc f = function
  [x; f x; f (f x); ...; (f uporabljena n-krat na x)].
  Funkcija je repno rekurzivna.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# apply_sequence (fun x -> x * x) 2 5;;
+# apply_sequence (fun x -> x * x) 2 5;;apply_sequence (fun x -> x * x) 2 5;;apply_sequence (fun x -> x * x) 2 5;;
 - : int list = [2; 4; 16; 256; 65536; 4294967296]
                # apply_sequence (fun x -> x * x) 2 (-5);;
 - : int list = []
@@ -282,3 +280,20 @@ let rec first f default = function
   | [] -> default 
   | x :: xs -> if f x then x else first (f) (default) (xs)
 
+let rec stirlingova (n,k) = 
+  if k = 1 || n = k then 1
+  else 
+    if k > 0 && n > k then (stirlingova (n-1, k-1)) + k * (stirlingova (n-1, k))
+     else 0
+  
+let rec razclenitev (n, k) =
+  if k = 1 || n = k then 1
+  else 
+    if k >0 && n > k then (razclenitev (n-1, k-1) + razclenitev (n-k, k ) )
+    else 0
+
+let rec st_prve_vrste (n,k) = 
+  if k = n then 1
+  else
+    if k >0 && n > k then (st_prve_vrste(n-1, k-1) + (n-1) * st_prve_vrste(n-1, k))
+    else 0

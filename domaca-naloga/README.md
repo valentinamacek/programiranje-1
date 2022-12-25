@@ -97,6 +97,9 @@ Vsaka datoteka `.sdk` ima tudi pripadajočo datoteko `.out`, v kateri je praviln
 Če boste med reševanjem naloge naleteli na težavo z lokalno namestitvijo OCamla, to čim prej sporočite asistentu Filipu, da vam lahko pomagamo usposobiti vse potrebno.
 
 Če boste domačo nalogo reševali v okoljih, ki ne podpirajo branja datotek (npr. prek spletne storitve), si poglejte spodnji del datoteke `main.ml`, kjer je prikazana uporaba v takem primeru. Za delo v takih okoljih boste verjetno morali tudi vse datoteke združiti v eno samo. To najlaže naredite tako, da jih po vrsti skopirate v eno datoteko in odstranite kvalificirane klice (npr. klic oblike `Model.problem_of_string` nadomestite s `problem_of_string`).
+V terminal : najprej cd domaca-naloga potem tole:
+
+ C:\OCaml64\usr\local\bin\ocaml-env.exe exec -- C:\\OCaml64\\home\\Valentina\\.opam\\4.14.0+mingw64c\\bin\\ocamlopt.exe  -g model.ml solver.ml main.ml -o sudoku.exe
 
 ## Kriterij
 
