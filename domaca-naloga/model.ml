@@ -1,5 +1,4 @@
 (* Pomožni tip, ki predstavlja mrežo *)
-
 type 'a grid = 'a Array.t Array.t
 
 (* Funkcije za prikaz mreže.
@@ -43,9 +42,10 @@ let print_grid string_of_cell grid =
 
 (* Funkcije za dostopanje do elementov mreže *)
 
-let get_row (grid : 'a grid) (row_ind : int) = failwith "TODO"
+let get_row (grid : 'a grid) (row_ind : int) = 
+  Array.init 9 (fun stolpec -> grid.(row_ind).(stolpec))
 
-let rows grid = failwith "TODO"
+let rows grid = List.init 9 (get_row grid)
 
 let get_column (grid : 'a grid) (col_ind : int) =
   Array.init 9 (fun row_ind -> grid.(row_ind).(col_ind))
@@ -58,7 +58,8 @@ let boxes grid = failwith "TODO"
 
 (* Funkcije za ustvarjanje novih mrež *)
 
-let map_grid (f : 'a -> 'b) (grid : 'a grid) : 'b grid = failwith "TODO"
+let map_grid (f : 'a -> 'b) (grid : 'a grid) : 'b grid = 
+  Array.init 9 (fun vrstica -> Array.map f grid.(vrstica))
 
 let copy_grid (grid : 'a grid) : 'a grid = map_grid (fun x -> x) grid
 
@@ -118,4 +119,4 @@ type solution = int grid
 
 let print_solution solution = failwith "TODO" (*ko izpise ni vec praznih placov*)
 
-let is_valid_solution problem solution = failwith "TODO" ()
+let is_valid_solution problem solution = failwith "TODO" 
