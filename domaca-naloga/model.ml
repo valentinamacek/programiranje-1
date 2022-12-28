@@ -52,11 +52,25 @@ let get_column (grid : 'a grid) (col_ind : int) =
 
 let columns grid = List.init 9 (get_column grid)
 
-let get_box (grid : 'a grid) (box_ind : int) = failwith "TODO"
+let mapi_grid f grid = 
+  Array.init 3 (fun vrstica -> Array.map f grid.(vrstica))
 
-let boxes grid = failwith "TODO"
+let get_box (grid : 'a grid) (box_ind : int) = 
+  let zacetni = box_ind - (box_ind mod 3)
+  in
+  let row_blocks grid =
+  Array.init 3 (fun vrstica -> grid.(zacetni + vrstica)|> Array.to_list |> chunkify 3 |> Array.of_list)
+  in 
+  let k = row_blocks grid 
+  in 
+  let l = mapi_grid (Array.of_list) k 
+  in
+  Array.init 3 (fun vrstica -> l.(vrstica).(box_ind mod 3))
+
+let boxes grid = List.init 9 (get_box grid)
 
 (* Funkcije za ustvarjanje novih mrež *)
+
 
 let map_grid (f : 'a -> 'b) (grid : 'a grid) : 'b grid = 
   Array.init 9 (fun vrstica -> Array.map f grid.(vrstica))

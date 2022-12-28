@@ -8,11 +8,10 @@ let primer = [|[|3;4;5|];[|2;3;6|]|]
   ;;
 (* - : int array = [|3; 4; 5|] *)
 let mapi_grid f grid = 
-  Array.init 2 (fun vrstica -> Array.map f grid.(vrstica))
+  Array.init 3 (fun vrstica -> Array.map f grid.(vrstica))
   (* # Array.init 3 (fun i-> primer.(0).(i));;
   - : int array = [|3; 4; 5|] *)
-let tabela = [|[|0;0;0;1;1;1;2;2;2|];[|0;0;0;1;1;1;2;2;2|]; [|0;0;0;1;1;1;2;2;2|]|]
-
+let tabela = [|[|0;0;0;1;1;1;2;2;2|];[|0;0;0;1;1;1;2;2;2|]; [|0;0;0;1;1;1;2;2;2|]; [|3;3;3;4;4;4;5;5;5|];[|3;3;3;4;4;4;5;5;5|]; [|3;3;3;4;4;4;5;5;5|]; [|6;6;6;7;7;7;8;8;8|];[|6;6;6;7;7;7;8;8;8|]; [|6;6;6;7;7;7;8;8;8|]|]
 let chunkify size lst =
   let rec aux chunk chunks n lst =
     match (n, lst) with
@@ -24,11 +23,18 @@ let chunkify size lst =
   aux [] [] size lst
 
 let get_box grid index =
+  let zacetni = index - (index mod 3)
+  in
   let row_blocks grid =
-  Array.init 3 (fun vrstica -> grid.(index + vrstica)|> Array.to_list |> chunkify 3 |> Array.of_list)
+  Array.init 3 (fun vrstica -> grid.(zacetni + vrstica)|> Array.to_list |> chunkify 3 |> Array.of_list)
   in 
-  Array.init 3 (fun vrstica -> Array.of_list (row_blocks.(vrstica).(0)))
+  let k = row_blocks grid 
+  in 
+  let l = mapi_grid (Array.of_list) k 
+  in
+  Array.init 3 (fun vrstica -> l.(vrstica).(index mod 3))
 
+  let boxes grid = List.init 9 (get_box grid)
 
 
 
