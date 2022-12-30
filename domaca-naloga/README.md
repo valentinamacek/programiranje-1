@@ -84,7 +84,7 @@ To ustvari datoteko `sudoku.exe`, ki ob klicu
 
 reši sudokuje v datotekah `primer-1.sdk`, `primer-2.sdk`, ...
 
-V mapi `sudokuji` najdete testne datoteke, ki vsebujejo primere običajnih sudokujev. Program lahko na vseh sudokujih poženete kot
+V mapi `sudokuji` najdete testne datoteke, ki vsebujejo primere običajnih sudokujev. Program lahko na vseh sudokujih poženete kot ./sudoku.exe sudokuji/obicajni-1.sdk 
 
     ./sudoku.exe sudokuji/*.sdk
 

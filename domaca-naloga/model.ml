@@ -117,20 +117,70 @@ let print_problem problem : unit =
     fun c -> match c with 
       | None -> " " 
       | Some i -> string_of_int i
-  ) problem
+  ) problem.initial_grid
 
 let problem_of_string str =
   let cell_of_char = function
     | ' ' -> Some None
-    | c when '1' <= c && c <= '9' -> Some (Some (Char.code c - Char.code '0'))
+    | c when '1' <= c && c <= '9' -> Some (Some (Char.code c - Char.code '0')) (*vrne int 9 npr.*)
     | _ -> None
   in
   { initial_grid = grid_of_string cell_of_char str }
+(*vrne int list z indeksi vrstic, ki imajo vsaj eno celico neizpolnjeno*)
+let cal_empty_rows grid = 
+  let rec empty_rows_aux acc index (*dobis list of arrays*) = function
+      | [] -> List.rev acc
+      | x :: xs -> if (Array.exists (Option.is_none) x ) then (empty_rows_aux (index :: acc) (index + 1) xs )
+                    else (empty_rows_aux (acc) (index + 1) xs)
+in empty_rows_aux [] 0 (rows grid) 
+
+let rec reverse = function
+  | [] -> [] 
+  | x:: xs-> reverse xs @ [x]
+
+let min_and_rest list =
+  let rec find_min min = function
+      | [] -> min
+      | x :: xs -> if x < min then find_min x xs else find_min min xs
+  in 
+  let rec remove_min min prejsnji  = function
+      |[] -> failwith "to ni to"
+      | x :: xs -> if x = min then (reverse prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
+  in 
+  match list with 
+   | [] -> None
+   | x :: xs -> 
+     let z = find_min x xs in  
+     Some( z, remove_min z [] list )
+let selection_sort lst = 
+  let rec aux ur neur = 
+     match  min_and_rest neur with  
+       | None -> reverse ur 
+       | Some(x, xs) -> aux (x :: ur) xs
+  in aux [] lst 
+
+let manjkajoci (list: int list) = 
+  let rec manjkajoci_aux acc = function
+      | [] -> Some acc
+      | [x] -> Some acc
+      | x :: y :: xs -> if x + 1 = y then manjkajoci_aux (acc) (y :: xs) else 
+        if x = y then None
+        else manjkajoci_aux ((x+1) :: acc) ((x+1)::y::xs)
+in manjkajoci_aux [] (selection_sort (0 ::(10) :: list))
+
 
 (* Model za izhodne rešitve *)
 
 type solution = int grid
 
-let print_solution solution = failwith "TODO" (*ko izpise ni vec praznih placov*)
+let print_solution solution = print_grid (fun i -> string_of_int i) solution
 
-let is_valid_solution problem solution = failwith "TODO" 
+
+let is_valid_solution problem solution = 
+  let rec preveri vrstice stolpci = 
+    match (vrstice, stolpci) with
+    | ([], []) -> true
+    | ([], _) -> false
+    | (_, []) -> false
+    | (x :: xs, y:: ys) -> if (manjkajoci (Array.to_list (x ))= Some []) && (manjkajoci (Array.to_list (y)) = Some []) then preveri (xs) (ys) else false
+in preveri (rows solution) (columns solution)
