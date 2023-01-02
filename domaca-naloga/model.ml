@@ -56,16 +56,17 @@ let mapi_grid f grid =
   Array.init 3 (fun vrstica -> Array.map f grid.(vrstica))
 
 let get_box (grid : 'a grid) (box_ind : int) = 
+  (*vsak box ima elemente iz treh vrstic  prsva vrstica ima zacetni indeks*)
   let zacetni = box_ind - (box_ind mod 3)
   in
-  let row_blocks grid =
+  let row_blocks grid = (*ustrezne vrstice razdelimo na sezname dolzine 3*)
   Array.init 3 (fun vrstica -> grid.(zacetni + vrstica)|> Array.to_list |> chunkify 3 |> Array.of_list)
   in 
-  let k = row_blocks grid 
+  let razdeljene_vrstice = row_blocks grid 
   in 
-  let l = mapi_grid (Array.of_list) k 
-  in
-  Array.init 3 (fun vrstica -> l.(vrstica).(box_ind mod 3))
+  let deli_vrstice_v_array_obliki = mapi_grid (Array.of_list) razdeljene_vrstice 
+  in (*kater del od vrstice vzame ustreza box_ind mod 3*)
+  Array.init 3 (fun vrstica -> deli_vrstice_v_array_obliki.(vrstica).(box_ind mod 3))
 
 let boxes grid = List.init 9 (get_box grid)
 
@@ -126,6 +127,7 @@ let problem_of_string str =
     | _ -> None
   in
   { initial_grid = grid_of_string cell_of_char str }
+
 (*vrne int list z indeksi vrstic, ki imajo vsaj eno celico neizpolnjeno*)
 let cal_empty_rows grid = 
   let rec empty_rows_aux acc index (*dobis list of arrays*) = function
@@ -134,10 +136,7 @@ let cal_empty_rows grid =
                     else (empty_rows_aux (acc) (index + 1) xs)
 in empty_rows_aux [] 0 (rows grid) 
 
-let rec reverse = function
-  | [] -> [] 
-  | x:: xs-> reverse xs @ [x]
-
+(*Pomozn funckije za selection_sort*)
 let min_and_rest list =
   let rec find_min min = function
       | [] -> min
@@ -145,20 +144,22 @@ let min_and_rest list =
   in 
   let rec remove_min min prejsnji  = function
       |[] -> failwith "to ni to"
-      | x :: xs -> if x = min then (reverse prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
+      | x :: xs -> if x = min then (List.rev prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
   in 
   match list with 
    | [] -> None
    | x :: xs -> 
      let z = find_min x xs in  
      Some( z, remove_min z [] list )
+
 let selection_sort lst = 
   let rec aux ur neur = 
      match  min_and_rest neur with  
-       | None -> reverse ur 
+       | None -> List.rev ur 
        | Some(x, xs) -> aux (x :: ur) xs
   in aux [] lst 
-
+(*Poisce katera stevila med 1 in 9 manjkajo v seznamu pridobljen iz elementov v vrstici/stolpcu/boxu*)
+(*+ preveri, ce sta kaksna dva elementa v seznamu enaka*)
 let manjkajoci (list: int list) = 
   let rec manjkajoci_aux acc = function
       | [] -> Some acc
@@ -175,7 +176,8 @@ type solution = int grid
 
 let print_solution solution = print_grid (fun i -> string_of_int i) solution
 
-
+(*preveri vse vrstice in stolpce, ce so ustrezni bo za vsako vrstico/stolpce funkcija manjkajoci
+   vrnila Some [] saj nobeden od elementov od 1 do 9 ne manjka in nobeden se ne ponovi*)
 let is_valid_solution problem solution = 
   let rec preveri vrstice stolpci = 
     match (vrstice, stolpci) with

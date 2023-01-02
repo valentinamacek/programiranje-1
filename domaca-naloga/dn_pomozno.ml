@@ -157,9 +157,7 @@ let k = ze_v_vrstici osnovni_state 1
 (*najde manjkajoce>>*)
 (*vstavi manjkajoce*)
 (*preveri ce resitecv ustreza*)
-let rec reverse = function
-  | [] -> [] 
-  | x:: xs-> reverse xs @ [x]
+
 
 let min_and_rest list =
   let rec find_min min = function
@@ -168,7 +166,7 @@ let min_and_rest list =
   in 
   let rec remove_min min prejsnji  = function
       |[] -> failwith "to ni to"
-      | x :: xs -> if x = min then (reverse prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
+      | x :: xs -> if x = min then (List.rev prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
   in 
   match list with 
    | [] -> None
@@ -178,7 +176,7 @@ let min_and_rest list =
 let selection_sort lst = 
   let rec aux ur neur = 
      match  min_and_rest neur with  
-       | None -> reverse ur 
+       | None -> List.rev ur 
        | Some(x, xs) -> aux (x :: ur) xs
   in aux [] lst 
 
@@ -383,3 +381,7 @@ let print_solution solutione  =
     match solutione with 
     | None -> ()
     | Some solution -> print_grid (fun i -> string_of_int i) solution
+
+
+let  row_blocks grid =
+    Array.init 3 (fun vrstica -> grid.(vrstica)|> Array.to_list |> chunkify 3 |> Array.of_list)

@@ -26,7 +26,7 @@ let validate_state (state : state) : response =
     else Fail state
 
 type v_vrstici = {indeksi_none_stolpci: int list ; indeks_vrstice: int ; zasedeni: int list}
-    (*Doloci pozicijo noneov in kateri so ze v vrstici *)
+(*Prikaze pozicijo praznih celic in seznam stevilskih elementov, ki so  v vrstici*)
 let ze_v_vrstici (state : state) (index : int ) = 
   let rec ze_v_vrstici_aux acc ind_druge indexi_noneov = function
       | [] -> {indeksi_none_stolpci = indexi_noneov; indeks_vrstice = index; zasedeni = acc }
@@ -35,7 +35,7 @@ let ze_v_vrstici (state : state) (index : int ) =
 in ze_v_vrstici_aux [] 0 [] (Array.to_list (Model.get_row (state.current_grid) index ) )
     
 type v_stolpcu = {indeksi_none_vrstice: int list ; indeks_stolpca: int ; zasedeni: int list}
-    
+(*Prikaze pozicijo praznih celic in seznam stevilskih elementov, ki so  v stolpcu *) 
 let ze_v_stolpcu (state : state) (index : int ) = 
   let rec ze_v_stolpcu_aux acc ind_druge indexi_noneov = function
     | [] -> {indeksi_none_vrstice = indexi_noneov; indeks_stolpca = index; zasedeni = acc }
@@ -43,14 +43,17 @@ let ze_v_stolpcu (state : state) (index : int ) =
     | None :: xs -> ze_v_stolpcu_aux (acc) (ind_druge + 1) (ind_druge :: indexi_noneov) (xs)
 in ze_v_stolpcu_aux [] 0 [] (Array.to_list (Model.get_column (state.current_grid) index ) )
     
-
 (*prvo stanje, drugo stanje*)
   (* TODO: Pripravite funkcijo, ki v trenutnem stanju poišče hipotezo, glede katere
      se je treba odločiti. Če ta obstaja, stanje razveji na dve stanji:
      v prvem predpostavi, da hipoteza velja, v drugem pa ravno obratno.
      Če bo vaš algoritem najprej poizkusil prvo možnost, vam morda pri drugi
      za začetek ni treba zapravljati preveč časa, saj ne bo nujno prišla v poštev. *)
+
+(*zaenkrat je funkcija prirejena za resevanje sudokuja obicajni-1 kjer je v vrstici manjkajočih največ 2 *)
 let branch_state (state : state) : (state * state option) option = 
+  (*Pogledamo prvo prazno celico v prvi nepolni vrstici(vrstica ki vsebuje prazne celice)
+in poiscemo njene manjkajoce elemente, ki jih zapisemo v state.available*)
   let nepolne_vrstice = Array.of_list (state.empty_rows)
   in let prva_nepolna_vrstica = nepolne_vrstice.(0) 
   in let podatki_o_vrstici =  ze_v_vrstici (state) (prva_nepolna_vrstica)
@@ -60,6 +63,7 @@ let branch_state (state : state) : (state * state option) option =
       | None -> None
       | Some lst->let array_moznih = Array.of_list lst in 
                   if Array.length array_moznih <> 1 then 
+                    (*ce sta mozna dva bo najprej poskusil s prvim ,  ce ne uspe se z drugim -> *)
                       let  available1 = {loc=(podatki_o_vrstici.indeks_vrstice, prvi_none); possible= [array_moznih.(0)]}
                       in let state1 = {problem= state.problem; current_grid= state.current_grid; empty_rows=state.empty_rows; available= Some available1}
                     in let available2 = {loc=(podatki_o_vrstici.indeks_vrstice, prvi_none); possible= [array_moznih.(1)]}
@@ -71,11 +75,12 @@ let branch_state (state : state) : (state * state option) option =
                       in let state1 = {problem= state.problem; current_grid= state.current_grid; empty_rows=state.empty_rows; available= Some available1}
                     in 
                     Some (state1, None)
-
+(*prazno celico v gridu nastavi na možno rešitev*)
 let nova_grid i j element grid = 
   Array.init 9 (fun vrstica -> Array.init 9 (fun st -> if st = j && i = vrstica then (Some element) else grid.(vrstica).(st)))    
                     
 let izpolni_grid (state : state) =
+  (*ce available ni None je v available.loc zapisan mesto prazne celice v available.possible pa ena možna rešitev*)
     match state.available with 
       | None -> state
       | Some av -> let vrstica, stolpec = av.loc in 
