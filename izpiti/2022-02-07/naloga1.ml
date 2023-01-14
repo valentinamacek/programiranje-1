@@ -1,5 +1,7 @@
 (* 1. a) *)
-let je_idempotent _ = failwith "TODO"
+let je_idempotent (*(int * int) * (int * int)*) = function
+    | ((a,b),(c,d))-> [[a ; b]; [c;d]]
+
 
 (* 1. b) *)
 let produkt _ = failwith "TODO"

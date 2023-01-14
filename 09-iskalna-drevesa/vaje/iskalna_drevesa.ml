@@ -55,7 +55,9 @@ let rec height = function
     | Prazen -> 0
     | Vozlisce(levo, x, desno) -> max (height levo) (height desno) + 1
     
-
+let rec size = function
+    | Prazen -> 0
+    | Vozlisce(levo, x , desno) -> size (levo) + size (desno) + 1 
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tree f tree] preslika drevo v novo drevo, ki vsebuje podatke
  drevesa [tree] preslikane s funkcijo [f].
@@ -79,7 +81,7 @@ let rec map f = function
 let rec list_of_tree = function
     | Prazen -> []
     | Vozlisce(levo, x, desno) -> (x :: []) @ (list_of_tree (levo) ) @ (list_of_tree (desno))
-
+(* tezko z aux ker sta dva *)
 let is_list_ordered sez = 
      let rec ordered = function
          | [] -> true
@@ -87,6 +89,33 @@ let is_list_ordered sez =
          | x :: y :: tail -> if x >= y then ordered (y :: tail) else false
      in 
      ordered sez
+
+let min_and_rest list =
+let rec find_min min = function
+    | [] -> min
+    | x :: xs -> if x < min then find_min x xs else find_min min xs
+in 
+let rec remove_min min prejsnji  = function
+    |[] -> failwith "to ni to"
+    | x :: xs -> if x = min then (List.rev prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
+in 
+match list with 
+    | [] -> None
+    | x :: xs -> 
+    let z = find_min x xs in  
+    Some( z, remove_min z [] list )
+let selection_sort lst = 
+let rec aux ur neur = 
+    match  min_and_rest neur with  
+        | None -> List.rev ur 
+        | Some(x, xs) -> aux (x :: ur) xs
+in aux [] lst 
+    
+let urejeno tree = 
+    let list = list_of_tree tree
+    in 
+    selection_sort list 
+
 (*----------------------------------------------------------------------------*]
  Funkcija [is_bst] preveri ali je drevo binarno iskalno drevo (Binary Search 
  Tree, na kratko BST). Predpostavite, da v drevesu ni ponovitev elementov, 
@@ -97,7 +126,35 @@ let is_list_ordered sez =
  # test_tree |> mirror |> is_bst;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
-let is_bst t = 
+
+let rec filter boo sez =
+    let rec filter_aux acc = function
+      | [] -> List.rev acc
+      | x :: xs -> if boo x then filter_aux (x :: acc) xs  else filter_aux acc xs
+    in
+    filter_aux [] sez 
+
+let rec exists f sez = 
+    let rez = filter f sez
+    in 
+    if rez = [] then false else true
+
+
+let rec is_bst = function 
+    | Prazen -> true
+    | Vozlisce(levo, x,  desno) -> 
+        let levi = urejeno levo in 
+        if exists ((<)x) levi then false 
+            (*vecji od*)
+        else 
+            let desni= urejeno desno in
+            if exists ((>)x) desni then false
+            else
+               if  is_bst(levo) then 
+                is_bst(desno)
+               else false
+
+        
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -113,11 +170,21 @@ let is_bst t =
  # member 3 test_tree;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
-let member x = function 
+let rec member x = function 
     | Prazen -> false
-    | Vozlisce(_, s, _) -> if x = s then true
+    | Vozlisce(levo, s, desno) -> if x = s then true 
+        else 
+         if x > s then member x desno
+         else member x levo
      
-
+let rec insert x tree = 
+    if member x tree then tree 
+    else 
+        match tree with 
+        | Prazen ->  leaf x 
+        | Vozlisce(levo, s, desno) -> if x > s then Vozlisce(levo,s,(insert x desno)) else 
+            Vozlisce((insert x levo), s, desno) 
+ 
 (*----------------------------------------------------------------------------*]
  Funkcija [member2] ne privzame, da je drevo bst.
  
@@ -126,7 +193,10 @@ let member x = function
 [*----------------------------------------------------------------------------*)
 let rec member2 x = function
     | Prazen -> false
-    | Vozlisce(levo, x, desno) -> x = y || member2 x levo || member2 x desno
+    | Vozlisce(levo, s, desno) -> if x = s then true 
+                                  else 
+                                    if member2 x levo then true else member2 x desno 
+
 
 
 (*----------------------------------------------------------------------------*]
@@ -141,7 +211,25 @@ let rec member2 x = function
  # pred (Node(Empty, 5, leaf 7));;
  - : int option = None
 [*----------------------------------------------------------------------------*)
+let naslednik x drevi = 
+     match urejeno drevi with 
+      | [] -> None
+      | x :: xs -> Some x 
 
+let succ = function
+    | Prazen -> None
+    | Vozlisce(levo, x, Prazen) -> None
+    | Vozlisce(levo, x, desno) -> naslednik x desno 
+
+let predhod x drevi =
+    match List.rev (urejeno drevi) with 
+    | [] -> None
+    | x :: xs -> Some x 
+
+let pred = function
+    | Prazen -> None
+    | Vozlisce(Prazen, x, desno) -> None
+    | Vozlisce(levo, x, desno) -> predhod x levo
 
 (*----------------------------------------------------------------------------*]
  Na predavanjih ste omenili dva načina brisanja elementov iz drevesa. Prvi 
@@ -155,9 +243,29 @@ let rec member2 x = function
  Node (Node (Node (Empty, 0, Empty), 2, Empty), 5,
  Node (Node (Empty, 6, Empty), 11, Empty))
 [*----------------------------------------------------------------------------*)
+(* let sestavi_novo_bst lst izbrisani = 
+    let rec sestavi_aux acc = function
+      | [] -> acc
+      | x :: xs -> if  *)
+(*ideja da ce ni nc naprej zbrise njega ga pa nadomesti s svojim succom in potem mormo v preostalem drevesu izbrisat succ*)
+let rec delete x drevo = 
+    (*najprej ga zelimo najt*)
+    if member x drevo then match drevo with
+        | Prazen -> Prazen 
+        | Vozlisce(Prazen, a, Prazen) -> if x = a then Prazen else drevo
+        | Vozlisce(Prazen, a, Vozlisce(Prazen, s, Prazen)) -> if x = a then leaf s else drevo
+        | Vozlisce(Vozlisce(Prazen, s, Prazen), a, Prazen ) -> if x = a then leaf s else drevo
+        | Vozlisce(levo, s, desno) -> if x = s then 
+                                     match succ drevo with 
+                                     | Some k -> Vozlisce(levo, k, delete k desno)
+                                     | None -> Prazen
+                                    else
+                                        if x > s then Vozlisce(levo, s, delete x desno) else Vozlisce(delete x levo, s, desno)
+   else drevo
 
 
-(*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
+(*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
  SLOVARJI
 
  S pomočjo BST lahko (zadovoljivo) učinkovito definiramo slovarje. V praksi se
@@ -167,7 +275,7 @@ let rec member2 x = function
  strukturo glede na ključe. Ker slovar potrebuje parameter za tip ključa in tip
  vrednosti, ga parametriziramo kot [('key, 'value) dict].
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
-
+(* let type slovar =  *)
 
 (*----------------------------------------------------------------------------*]
  Napišite testni primer [test_dict]:

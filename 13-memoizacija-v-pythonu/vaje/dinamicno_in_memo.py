@@ -10,7 +10,29 @@ from functools import cache
 # Primer: v seznamu `[2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]` kot rezultat vrne
 # podzaporedje `[2, 3, 4, 4, 6, 7, 8, 9]`.
 # -----------------------------------------------------------------------------
+def najdaljse_narascajoce_podazporedje (sez):
+    @cache#pogleda, ce ze ima rezultat te funkcije pri parametrih, ki jih dobi, in potem ne zracuna se enkrat
+    def najdaljse(spodnja_meja, i):
+        if i >= len(sez):
+            return []
+        elif sez[i] < spodnja_meja:
+            return najdaljse(spodnja_meja, i+1)
+        else: 
+            z_itim = [sez[i]] + najdaljse(sez[i], i + 1) #[sez[i] + najdalsi for najdaljsi in najdaljsa]
+            brez_i_tega = najdaljse(spodnja_meja, i+1)#npr. pri 12 tuki dobi z _itim [] brez itega pa [8,9] zato obdrzi [8,9]
+            if len(z_itim) >len(brez_i_tega):
+                return z_itim 
+            else:
+                return brez_i_tega
+    return najdaljse(float("-inf"), 0)
+    #  if len(sez) > 1:
+    #     najdaljse_brez_prvega = najdaljse_narascajoce_podazporedje(sez[1:])
+    #     if sez[0] <= najdaljse_brez_prvega:
+    #         return [sez[0]] + najdaljse_brez_prvega
+    #     else:
+    #         return najdaljse_brez_prvega
 
+        
 # -----------------------------------------------------------------------------
 # Rešitev sedaj popravite tako, da funkcija `vsa_najdaljsa` vrne seznam vseh
 # najdaljših naraščajočih podzaporedij.
@@ -42,7 +64,16 @@ from functools import cache
 # treh skokih, v močvari `[4, 1, 8, 2, 11, 1, 1, 1, 1, 1]` pa potrebuje zgolj
 # dva.
 # =============================================================================
-
+def zabica(mocvara):
+    #vrne stevilo skokov
+    @cache
+    def skoki(i, e):
+        if i >= len(mocvara):
+            return 0
+        else: 
+            e += mocvara[i] #pridobi energijo iz mesta na katerem je
+            return 1+ min([skoki(i+x, e-x)for x in range(1,e+1)])
+    return skoki(0,0)
 
 
 # =============================================================================

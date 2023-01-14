@@ -20,6 +20,20 @@ let test_matrix =
   [| [| 1 ; 2 ; 0 |];
      [| 2 ; 4 ; 5 |];
      [| 7 ; 0 ; 1 |] |]
+(* 
+let max_cheese cheese_matrix = 
+   let max_cheese_aux cheese_matrix i j dolzina= 
+      if (i < dolzina - 1) && (j < Array.length cheese_matrix - 1 ) then
+         cheese_matrix.(i).(j) + max ((Array.init (dolzina-1) (fun k -> cheese_matrix.(i + 1 + k))), Array.init  ) *)
+       
+    
+let dobi_stolpce matrix i j = 
+   Array.init (Array.length matrix - i) (fun m -> Array.init ((Array.length matrix)-1 - j) (fun k -> matrix.(m + i ).(k +(j+1))))
+
+let dobi_vrstice matrix i j = 
+   Array.init ((Array.length matrix)-1 - i) (fun m -> Array.init (Array.length matrix - j) (fun k -> matrix.(m + i +1).(k+j)) )
+
+(*DOdas se, da ce je na robu vrstice gleda samo dol, ce v zadnji vrstici pa samo desno ce je cis na koncu pa doda samo zadnbji element*)
 
 (*----------------------------------------------------------------------------*]
  Poleg količine sira, ki jo miška lahko poje, jo zanima tudi točna pot, ki naj
@@ -54,7 +68,18 @@ type mouse_direction = Down | Right
  # alternating_towers 10;;
  - : int = 35
 [*----------------------------------------------------------------------------*)
-
+let alternating_towers height = 
+   let rec redbottom height  =
+      if height < 0 then 0 else 
+         if height <= 2 then 1 else  (*ker ce je 2 in je rdeci na vrsti lahko samo rdecega 2 vrne ker 2krat po 1 ne sme ker bosta dva rdec zapored*)  
+         bluebottom (height - 1) +  bluebottom (height - 2)
+   and 
+   bluebottom height = 
+      if height <= 1  then 0 else (*ce 1 potem to ni rešitev vrne 0 ker  1 ni noben od modrih*)
+      if height <= 2 then 1 else
+      redbottom (height - 2 ) + redbottom (height - 3 )
+   in 
+   redbottom height + bluebottom height
 
 
 (*----------------------------------------------------------------------------*]

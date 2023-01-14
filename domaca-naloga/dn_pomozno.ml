@@ -41,7 +41,8 @@ let get_box grid index =
   in 
   let l = mapi_grid (Array.of_list) k 
   in
-  Array.init 3 (fun vrstica -> l.(vrstica).(index mod 3))
+  let razdeljena = Array.init 3 (fun vrstica -> l.(vrstica).(index mod 3)) 
+  in Array.concat ( Array.to_list razdeljena)
 
   let boxes grid = List.init 9 (get_box grid)
 
@@ -385,3 +386,114 @@ let print_solution solutione  =
 
 let  row_blocks grid =
     Array.init 3 (fun vrstica -> grid.(vrstica)|> Array.to_list |> chunkify 3 |> Array.of_list)
+
+(*da bi hranil list izbranih, do sedaj (in sicer indekse vrstic)--ko bi failal bi sel v pogledat v tazadnji indeks-> ce je tam se kaksna nesprobana permutacija , 
+   ce so pa ze vse sprobane gre pa se eno nazaj *)
+
+(*manjkajoci nej se shranijo v tabelo*)
+let rec insert el = function
+    | [] -> [[el]]
+    | x:: xs -> [(el::x::xs)] @ List.map (fun lst -> x :: lst) (insert el xs)
+(* let rec nova_per 
+mutacija manjkajoci do_sedaj = *)
+let rec vse_permutacije manjkajoci = 
+  print_endline ("Računam ");
+    match manjkajoci with 
+    | [] -> [manjkajoci]
+    | x:: xs -> List.flatten (List.map (insert x) (vse_permutacije xs))
+
+(*Zaenkrat si shranimo vse_permutacije manjkajocih*)
+(* let memoiziraj_rec vse_perm =
+  let rezultati = Hashtbl.create 512 in
+  let rec mem_f x =
+    match Hashtbl.find_opt rezultati x with
+    | None ->
+        let y = vse_perm mem_f x in
+        Hashtbl.add rezultati x y;
+        y
+    | Some y ->
+        y
+  in
+  mem_f
+
+let mem_perm = memoiziraj_rec (vse_permutacije) *)
+(* let ze_v_vrstici (state : state) (index : int ) = 
+  let rec ze_v_vrstici_aux acc ind_druge indexi_noneov = function
+      | [] -> {indeksi_none_stolpci = indexi_noneov; indeks_vrstice = index; zasedeni = acc }
+      | (Some x ) :: xs -> ze_v_vrstici_aux (x:: acc) (ind_druge + 1) (indexi_noneov) (xs)
+      | None :: xs -> ze_v_vrstici_aux (acc) (ind_druge + 1) (ind_druge :: indexi_noneov) (xs)
+in ze_v_vrstici_aux [] 0 [] (Array.to_list (Model.get_row (state.current_grid) index ) ) *)
+
+
+
+type vrste = Vrstica | Stolpec | Box
+
+type lastnosti_objekta = { indeksi_praznih : (int * int) list list ; vrsta : vrste ; zasedeni : int list list }
+(*zelimo zabelezit indekse noneov za vsako vrstico posebaj in zabelezit [[indeksi_none 0-te vrstice]; [indeksi_none---]]*)
+let izracun_koordinat_iz_boxa box_ind el_v_boxu = 
+  let vrstica = box_ind -(box_ind mod 3) + el_v_boxu / 3 in
+  let stolpec = (box_ind mod 3) * 3 + el_v_boxu mod 3 in
+  (vrstica, stolpec)
+  
+let v_objektu index arr_objekta vrsta(*je array*) = 
+  let rec v_objektu_aux acc_none acc_zasedeni index_druge = function
+      | [] -> (acc_none, acc_zasedeni)
+      | (Some x ):: xs -> v_objektu_aux (acc_none) (x:: acc_zasedeni) (index_druge + 1) (xs)
+      | None :: xs -> match vrsta with 
+                      | Vrstica -> v_objektu_aux ((index, index_druge):: acc_none) (acc_zasedeni) (index_druge + 1) (xs)
+                      | Stolpec -> v_objektu_aux ((index_druge, index):: acc_none) (acc_zasedeni) (index_druge + 1) (xs)
+                      | Box -> let x, y = izracun_koordinat_iz_boxa index index_druge 
+                              in v_objektu_aux ((x,y):: acc_none) (acc_zasedeni) (index_druge + 1) (xs)
+  in v_objektu_aux [] [] 0 (Array.to_list arr_objekta)
+
+let cal_empty vrsta_objekta grid = 
+  let rec empty_rows_aux acc_prazni acc_zasedeni index (*dobis list of arrays*) = function
+      | [] -> {indeksi_praznih = List.rev acc_prazni; vrsta=vrsta_objekta; zasedeni= List.rev acc_zasedeni}
+      | x :: xs -> if (Array.exists (Option.is_none) x ) then 
+                     let prazni, zasedeni = v_objektu (index) (x) (vrsta_objekta) in
+                     (empty_rows_aux (prazni:: acc_prazni) (zasedeni :: acc_zasedeni) (index + 1) xs )
+                    else 
+                      (empty_rows_aux ([]::acc_prazni) ([]::acc_zasedeni) (index + 1) xs)
+in 
+  match vrsta_objekta with 
+      | Vrstica -> empty_rows_aux [] [] 0 (rows grid) 
+      | Stolpec -> empty_rows_aux [] [] 0 (columns grid)
+      | Box -> empty_rows_aux [] [] 0 (boxes grid)
+
+
+let kje_nadaljevati vrsta_objekta grid = 
+  let rec find_min_aux min min_indeks trenutni_index = function
+          | [] -> (min, min_indeks)
+          | x :: xs -> if x < min && x <> 0 then find_min_aux (x) (trenutni_index) (trenutni_index + 1) xs
+                       else 
+                        find_min_aux (min) (min_indeks) (trenutni_index + 1 ) xs
+    in 
+  let objekt = cal_empty vrsta_objekta grid in
+  let elementi = List.map (fun x -> List.length x) (objekt.indeksi_praznih)
+  in find_min_aux 9 0 0 elementi
+
+let kje_nadaljevati_v_gridu grid = 
+  let rec najmanjsi_od_objektov min vrsta_objekta (min_vrsta_objekta, index)= 
+      match vrsta_objekta with
+      |Vrstica -> let od_vrstice_min, min_index = kje_nadaljevati Vrstica grid in 
+                   najmanjsi_od_objektov (od_vrstice_min) Stolpec (Vrstica, min_index)
+      |Stolpec -> let od_stolpca_min, min_index = kje_nadaljevati Stolpec grid in
+                  if od_stolpca_min < min then 
+                   najmanjsi_od_objektov (od_stolpca_min) Box (Stolpec, min_index)
+                  else
+                   najmanjsi_od_objektov (min) Box (min_vrsta_objekta, index)
+      |Box -> let od_boxa_min, min_index = kje_nadaljevati Box grid in
+                  if od_boxa_min < min then 
+                    (od_boxa_min, Box, min_index)
+                  else
+                    (min, min_vrsta_objekta, index)
+                    (*vrne: npr: (2, Vrstica, 1)
+                       objekt z najmanjsim stevilom praznih celic je vrstica in sicer 1. vrstica ima 2 prazni celici*)
+in najmanjsi_od_objektov 9 Vrstica (Vrstica, 0)
+(*Vrne nas naslednji korak *)
+(* let ze_v_vrstici (state : state) (index : int ) = 
+  let rec ze_v_vrstici_aux acc ind_druge indexi_noneov = function
+      | [] -> {indeksi_none_stolpci = indexi_noneov; indeks_vrstice = index; zasedeni = acc }
+      | (Some x ) :: xs -> ze_v_vrstici_aux (x:: acc) (ind_druge + 1) (indexi_noneov) (xs)
+      | None :: xs -> ze_v_vrstici_aux (acc) (ind_druge + 1) (ind_druge :: indexi_noneov) (xs)
+in ze_v_vrstici_aux [] 0 [] (Array.to_list (Model.get_row (state.current_grid) index ) ) *)

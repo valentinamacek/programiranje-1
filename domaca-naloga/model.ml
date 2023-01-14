@@ -66,7 +66,8 @@ let get_box (grid : 'a grid) (box_ind : int) =
   in 
   let deli_vrstice_v_array_obliki = mapi_grid (Array.of_list) razdeljene_vrstice 
   in (*kater del od vrstice vzame ustreza box_ind mod 3*)
-  Array.init 3 (fun vrstica -> deli_vrstice_v_array_obliki.(vrstica).(box_ind mod 3))
+  let razdeljena = Array.init 3 (fun vrstica -> deli_vrstice_v_array_obliki.(vrstica).(box_ind mod 3))
+  in Array.concat ( Array.to_list razdeljena)
 
 let boxes grid = List.init 9 (get_box grid)
 
@@ -128,13 +129,14 @@ let problem_of_string str =
   in
   { initial_grid = grid_of_string cell_of_char str }
 
+  
 (*vrne int list z indeksi vrstic, ki imajo vsaj eno celico neizpolnjeno*)
-let cal_empty_rows grid = 
-  let rec empty_rows_aux acc index (*dobis list of arrays*) = function
+let cal_empty vrsta_objekta grid = 
+  let rec empty_aux acc index (*dobis list of arrays*) = function
       | [] -> List.rev acc
-      | x :: xs -> if (Array.exists (Option.is_none) x ) then (empty_rows_aux (index :: acc) (index + 1) xs )
-                    else (empty_rows_aux (acc) (index + 1) xs)
-in empty_rows_aux [] 0 (rows grid) 
+      | x :: xs -> if (Array.exists (Option.is_none) x ) then (empty_aux (index :: acc) (index + 1) xs )
+                    else (empty_aux (acc) (index + 1) xs)
+in empty_aux [] 0 (vrsta_objekta grid) 
 
 (*Pomozn funckije za selection_sort*)
 let min_and_rest list =
