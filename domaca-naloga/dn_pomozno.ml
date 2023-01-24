@@ -183,6 +183,7 @@ let selection_sort lst =
 
 let poskus = selection_sort k.zasedeni
 
+
 let manjkajoci (list: int list) = 
   let rec manjkajoci_aux acc = function
       | [] -> Some acc
@@ -497,3 +498,43 @@ in najmanjsi_od_objektov 9 Vrstica (Vrstica, 0)
       | (Some x ) :: xs -> ze_v_vrstici_aux (x:: acc) (ind_druge + 1) (indexi_noneov) (xs)
       | None :: xs -> ze_v_vrstici_aux (acc) (ind_druge + 1) (ind_druge :: indexi_noneov) (xs)
 in ze_v_vrstici_aux [] 0 [] (Array.to_list (Model.get_row (state.current_grid) index ) ) *)
+
+
+let poglej_min grid = 
+   let min, objekt, indeks = kje_nadaljevati_v_gridu grid in
+   let lastnosti = cal_empty objekt grid in
+   let stanje_praznih = lastnosti.indeksi_praznih in
+   let v_array =  Array.of_list stanje_praznih in
+   let prazni = v_array.(indeks) in
+   let stanje_zasedeni = lastnosti.zasedeni in 
+   let v_arr = Array.of_list stanje_zasedeni in
+   let zasedeni = v_arr.(indeks) in
+   let manjkajo = manjkajoci zasedeni in
+   (prazni, manjkajo)
+   (*manjkajo je oblike sez option Al je NONE-> napaka ali pa Some [sez]*)
+
+(*na izpolni morajo prit manjkajoci ze v seznamu*) (*ko manjkajoce na novo izracunamo so prazni*)
+(*manjkajoci pridejo v padajoce urejenem seznamu Some [9; 8; 6; 5; 3; 1]*)
+(*ideja je postopna permutacija*)
+(* let izpolni manjkajoci ze_preizkusene = 
+    if  *)
+(*imamo indekse praznih  na voljo in manjkajoce -> lahko bi v tem *)
+(*Npr. manjkajoci [6;7;8,9] poizkusi najprej *)
+(*boljse kot vse permutacije da pogleda, zdajsnji vrstni red *)
+(**)
+let rec last = function
+    | [] -> None
+    | x :: [] -> Some x 
+    | x :: xs -> last xs
+     
+
+let rec backtracking seznam_seznamov = 
+  match List.rev seznam_seznamov with 
+  | [] -> last []
+  | [] :: xs -> backtracking (List.rev xs)(*ce ne ga pol se enkrat obrne*)
+  | x :: xs -> last x
+
+  (* # backtracking [[2;3];[4;5]];;ž
+  - : int option = Some 5
+  # backtracking [[2;3];[4;5];[]];;
+  - : int option = Some 5 *)
