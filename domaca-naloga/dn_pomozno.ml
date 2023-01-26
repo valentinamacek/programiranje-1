@@ -438,7 +438,9 @@ let izracun_koordinat_iz_boxa box_ind el_v_boxu =
   
 let v_objektu index arr_objekta vrsta(*je array*) = 
   let rec v_objektu_aux acc_none acc_zasedeni index_druge = function
-      | [] -> (acc_none, acc_zasedeni)
+      | [] -> match manjkajoci (acc_zasedeni)  with 
+              | None -> failwith "Napaka"
+              | Some manjkajoci ->  (acc_none, manjkajoci )
       | (Some x ):: xs -> v_objektu_aux (acc_none) (x:: acc_zasedeni) (index_druge + 1) (xs)
       | None :: xs -> match vrsta with 
                       | Vrstica -> v_objektu_aux ((index, index_druge):: acc_none) (acc_zasedeni) (index_druge + 1) (xs)
@@ -470,9 +472,9 @@ let kje_nadaljevati vrsta_objekta grid =
                         find_min_aux (min) (min_indeks) (trenutni_index + 1 ) xs
     in 
   let objekt = cal_empty vrsta_objekta grid in
-  let elementi = List.map (fun x -> List.length x) (objekt.indeksi_praznih)
+  let elementi = Array.map (fun x -> List.length x) (objekt.indeksi_praznih)
   in find_min_aux 9 0 0 elementi
-
+(*spremeni da zabelezi vse minimalne*)
 let kje_nadaljevati_v_gridu grid = 
   let rec najmanjsi_od_objektov min vrsta_objekta (min_vrsta_objekta, index)= 
       match vrsta_objekta with
@@ -509,8 +511,8 @@ let poglej_min grid =
    let stanje_zasedeni = lastnosti.zasedeni in 
    let v_arr = Array.of_list stanje_zasedeni in
    let zasedeni = v_arr.(indeks) in
-   let manjkajo = manjkajoci zasedeni in
-   (prazni, manjkajo)
+   (* let manjkajo = manjkajoci zasedeni in *)
+   (prazni, zasedeni)
    (*manjkajo je oblike sez option Al je NONE-> napaka ali pa Some [sez]*)
 
 (*na izpolni morajo prit manjkajoci ze v seznamu*) (*ko manjkajoce na novo izracunamo so prazni*)
@@ -538,3 +540,12 @@ let rec backtracking seznam_seznamov =
   - : int option = Some 5
   # backtracking [[2;3];[4;5];[]];;
   - : int option = Some 5 *)
+  let read_problem filename =
+    let channel = open_in filename in
+    let str = really_input_string channel (in_channel_length channel) in
+    close_in channel;
+    problem_of_string str
+
+let osnovni2 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-2.sdk" 
+let osnovni3 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-9.sdk"
+
