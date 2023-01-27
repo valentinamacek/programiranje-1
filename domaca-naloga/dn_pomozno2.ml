@@ -88,13 +88,13 @@ let cal_empty_rows grid =
 in empty_rows_aux [] 0 ( rows grid) 
 
 
-type available = { loc : int * int; possible : int list }
+(* type available = { loc : int * int; possible : int list } *)
 (*indeks vrstice * indeks stolpca manjkajocega*, *možni, da ga zasedejo*)
 
 
-type state = { problem : problem; current_grid : int option grid ; empty_rows : int list ; available: available option}
+(* type state = { problem : problem; current_grid : int option grid ; empty_rows : int list ; available: available option} *)
 
-let osnovni_state = {problem = osnovni ; current_grid = osnovni.initial_grid ; empty_rows = cal_empty_rows (osnovni.initial_grid); available = None }
+(* let osnovni_state = {problem = osnovni ; current_grid = osnovni.initial_grid ; empty_rows = cal_empty_rows (osnovni.initial_grid); available = None } *)
 
 (* V state dodas katere vrstice imajo prazne elemente*)
 
@@ -169,7 +169,7 @@ let foldi_grid (f : int -> int -> 'a -> 'acc -> 'acc) (grid : 'a grid)
   let nova_grid i j element grid = 
     Array.init 9 (fun vrstica -> Array.init 9 (fun st -> if st = j && i = vrstica then (Some element) else grid.(vrstica).(st)))    
                       
-  let izpolni_grid (state : state) =
+  (* let izpolni_grid (state) =
       match state.available with 
         | None -> state
         | Some av -> let vrstica, stolpec = av.loc in 
@@ -178,7 +178,7 @@ let foldi_grid (f : int -> int -> 'a -> 'acc -> 'acc) (grid : 'a grid)
                      let new_grid = nova_grid (vrstica) (stolpec) (mozni_element) (state.current_grid)
                      in 
                      {problem=state.problem; current_grid=new_grid ; empty_rows= cal_empty_rows (new_grid); available=None}  
-type solution = int grid
+type solution = int grid *)
 (* let is_valid_solution problem solution = 
     let rec preveri vrstice stolpci = 
       match (vrstice, stolpci) with
@@ -188,7 +188,7 @@ type solution = int grid
       | (x :: xs, y:: ys) -> if (manjkajoci (Array.to_list (x ))= Some []) && (manjkajoci (Array.to_list (y)) = Some []) then preveri (xs) (ys) else false
 in preveri (rows solution) (columns solution) *)
 
-type response = Solved of solution | Unsolved of state | Fail of state
+(* type response = Solved of solution | Unsolved of state | Fail of state *)
 
 (* let validate_state (state : state) : response =
   let unsolved =
@@ -240,9 +240,9 @@ let rec solve_state (state : state) =
 
 (* type state = { problem : problem; current_grid : int option grid ; empty_rows : int list ; available: available option} *)
 
-let osnovni_state = {problem = osnovni ; current_grid = osnovni.initial_grid ; empty_rows = cal_empty_rows (osnovni.initial_grid); available = None }
+(* let osnovni_state = {problem = osnovni ; current_grid = osnovni.initial_grid ; empty_rows = cal_empty_rows (osnovni.initial_grid); available = None }
 
-let osnovni_2state = {problem = osnovni ; current_grid = osnovni.initial_grid ; empty_rows = cal_empty_rows (osnovni.initial_grid); available = Some {loc=(1,4); possible=[4]}}
+let osnovni_2state = {problem = osnovni ; current_grid = osnovni.initial_grid ; empty_rows = cal_empty_rows (osnovni.initial_grid); available = Some {loc=(1,4); possible=[4]}} *)
 
 let string_of_list string_of_element sep lst =
   lst |> List.map string_of_element |> String.concat sep
@@ -406,7 +406,7 @@ let f list =
   !list
 ;; *)
 
-type available = { loc : int * int; possible : int list }
+
 
 (* let prazne_moznosti_iz_boxa sez_noneov manjka_v_vrstici manjka_v_stolpcu manjka_v_boxu = 
     let rec prazne_moznosti_aux acc = function
@@ -433,16 +433,7 @@ in mozni_za_none [] 0 (Array.to_list (box.indeksi_praznih))                     
 
 (* let najkrajsi objekt_state =
   let dolzine = objekt_state.manjkajoci in *)
-let minimalna_dolzina_manjkajocih grid = 
-  let vrstice = cal_empty Vrstica grid in
-  let minimalen = ref vrstice.min_dolzina in
-  let stolpci = cal_empty Stolpec grid in 
-    if stolpci.min_dolzina < !minimalen then 
-      minimalen:= stolpci.min_dolzina;
-  let boxi = cal_empty Box grid in 
-  if boxi.min_dolzina < !minimalen then 
-    minimalen:= boxi.min_dolzina;
-  (!minimalen)
+
    
 
 (* let izracunaj_moznosti grid = 
@@ -476,9 +467,12 @@ let f x =
         min_indeks := i::min_index;
   done;
   (!min, !min_indeks) *)
-type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta } 
 
-let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid}
+type available = { loc : int * int; possible : int list }
+
+type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  mutable minimalen: int; mutable za_resevanje: available list} 
+
+let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[] ; minimalni=[([],Vrstica)]; minimalen=9}
 
 let daj_na_izracun objekt = 
   let rec daj_na_izracun_aux acc = function
@@ -486,30 +480,104 @@ let daj_na_izracun objekt =
       | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
 in daj_na_izracun_aux [] objekt.min_indeksi
 
-type available = { loc : int * int; possible : int list }
+let minimalna_dolzina_manjkajocih (state) = 
+  let vrstice = cal_empty Vrstica state.current_grid in
+  let minimalen = ref vrstice.min_dolzina in
+  let stolpci = cal_empty Stolpec state.current_grid in 
+    if stolpci.min_dolzina < !minimalen then 
+      minimalen:= stolpci.min_dolzina;
+  let boxi = cal_empty Box state.current_grid in 
+  if boxi.min_dolzina < !minimalen then 
+    minimalen:= boxi.min_dolzina;
+  state.minimalen <- !minimalen
 
-let prazne_moznosti sez_noneov manjkajoci_v_vrsticah manjkajoci_v_stolpcih manjkajoci_v_boxih = 
+
+(* let prazne_moznosti sez_noneov manjkajoci_v_vrsticah manjkajoci_v_stolpcih manjkajoci_v_boxih = 
     let rec prazne_moznosti_aux acc = function
         | [] -> acc
         | (x,y) :: xs -> let skupni = presek3eh (manjkajoci_v_vrsticah.(x)) (manjkajoci_v_stolpcih.(y)) (manjkajoci_v_boxih.((izracun_boxa_iz_koordinat x y))) in 
                           let podatekxy = {loc=(x,y); possible=skupni}
                           in 
                           prazne_moznosti_aux (podatekxy::acc) (xs)
+in prazne_moznosti_aux [] sez_noneov *)
+
+
+
+(*Popravi*)
+(*na izracun lahko grejo isti indeksi veckrat*)
+(*for x in manjkajoci count the number of possible places*)
+(* let najboljsa_moznost (state: statenew) = 
+  let  *)
+(* let najboljsa_moznost (state:statenew) = 
+   let min = ref  in 
+   if state.vrstice.min_dolzina = state.minimalen then 
+     let x,y = minimalni  Vrstica state in
+        if x < min then 
+
+   if state.stolpci.min_dolzina = state.minimalen then *)
+let zapisi_minimalne (state)=
+   let mini = ref [] in
+   if state.vrstice.min_dolzina = state.minimalen then 
+     mini := (state.vrstice.min_indeksi, Vrstica)::!mini;
+   if state.stolpci.min_dolzina = state.minimalen then 
+    mini := (state.stolpci.min_indeksi, Stolpec)::!mini;
+   if state.boxi.min_dolzina = state.minimalen then
+    mini := (state.boxi.min_indeksi, Box)::!mini; 
+  state.minimalni <- !mini
+
+(* let daj_na_izracun objekt = 
+  let rec daj_na_izracun_aux acc = function
+      | [] -> List.flatten acc
+      | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
+in daj_na_izracun_aux [] objekt.min_indeksi *)
+
+
+
+let prazne_moznosti sez_noneov (state) = 
+  let rec prazne_moznosti_aux acc = function
+      | [] -> acc
+      | (x,y) :: xs -> let skupni = presek3eh (state.vrstice.manjkajoci.(x)) (state.stolpci.manjkajoci.(y)) (state.boxi.manjkajoci.((izracun_boxa_iz_koordinat x y))) in 
+                        let podatekxy = {loc=(x,y); possible=skupni}
+                        in 
+                        prazne_moznosti_aux (podatekxy::acc) (xs)
 in prazne_moznosti_aux [] sez_noneov
 
 
-let izracunaj_moznosti (state : statenew) = 
-  let minimalen = minimalna_dolzina_manjkajocih state.current_grid in
-  let mozni = ref [] in
-  if state.vrstice.min_dolzina = minimalen then 
-    mozni := daj_na_izracun state.vrstice::!mozni ;
-  if state.stolpci.min_dolzina = minimalen then 
-    mozni := daj_na_izracun state.stolpci::!mozni;
-  if state.boxi.min_dolzina = minimalen then 
-    mozni := daj_na_izracun state.boxi::!mozni; 
-  prazne_moznosti (List.flatten !mozni) state.vrstice.manjkajoci state.stolpci.manjkajoci state.boxi.manjkajoci
+let za_vsak_min_objekt_izracunaj indeksi (objekt) (state)= 
+  let rec daj_na_izracun_aux acc = function
+     | [] -> acc
+     | x::xs ->let rez = prazne_moznosti (objekt.indeksi_praznih.(x)) (state) in
+                daj_na_izracun_aux (rez::acc) (xs)
+in daj_na_izracun_aux [] indeksi 
+
+let za_vse_minimalne (state) = 
+  let rec za_vse_minimalne_aux acc = function
+      | [] -> acc
+      | (x,y)::xs -> match y with 
+                      | Vrstica -> let vsi_od_vrstic = za_vsak_min_objekt_izracunaj (x) (state.vrstice) (state) in
+                                    za_vse_minimalne_aux (vsi_od_vrstic::acc) xs
+                      | Stolpec -> let vsi_od_stolpcev = za_vsak_min_objekt_izracunaj (x) (state.stolpci) (state) in
+                      za_vse_minimalne_aux (vsi_od_stolpcev::acc) xs
+                      | Box -> let vsi_od_boxov = za_vsak_min_objekt_izracunaj (x) (state.boxi)  (state) in
+                      za_vse_minimalne_aux (vsi_od_boxov::acc) xs
+in za_vse_minimalne_aux [] state.minimalni
+(* let boljse_moznosti (state) = 
+  let rec boljse_moznosti_aux acc = function
+      | [] -> acc
+      | (x,y) :: xs ->  *)
+(* let unija_elementov_seznamov_narascajoce_urejenih  seznam1 seznam2 = 
+    let zacetni= seznam 1 in  *)
+(*Rabimo : unija seznamov
+          odstranjevanje elementov v seznamu
+          ce je element vsebovan v seznamu najhitrejse*)
+
+(* 
+  let zapisi_minimalne (state) in 
+in boljse_moznosti_aux [] state.minimalni *)
+
+
 
 
 
 (*samo za vsako vrstico box in stolpec ki je min mors to narest*)
-(*for manjkajoci in min_objekt count possible places -if 1 resi *)
+(*for manjkajoci in min_objekt count possible places -if 1 resi or if possible 1 *)
