@@ -375,6 +375,7 @@ in
 
 
 (*assert da to racunamo samo na zacetku (ko so fix vsi elemnti razicni)*)
+(*Ker dobimo manjkajoce v padajocem vrstnem redu in sto funkcijo pregledujemo glave od vecje k manjsi je acc urejen narascajoce*)
 let presek3eh stolpec vrstica box = 
     let rec presek3eh_aux acc = function
         | (_,[],_) -> acc
@@ -408,14 +409,7 @@ let f list =
 
 
 
-(* let prazne_moznosti_iz_boxa sez_noneov manjka_v_vrstici manjka_v_stolpcu manjka_v_boxu = 
-    let rec prazne_moznosti_aux acc = function
-        | [] -> acc
-        | (x,y) :: xs -> let skupni = presek3eh (manjka_v_vrstici.(x)) (manjka_v_stolpcu.(y)) (manjka_v_boxu.()) in 
-                         let podatekxy = {loc=(x,y); possible=skupni}
-                         in 
-                         prazne_moznosti_aux (podatekxy::acc) (xs)
-in prazne_moznosti_aux [] sez_noneov *)
+
 (* 
 let mozni_za_prazno grid = 
   let vrstice = cal_empty Vrstica grid in 
@@ -468,11 +462,11 @@ let f x =
   done;
   (!min, !min_indeks) *)
 
-type available = { loc : int * int; possible : int list }
+type available = { loc : int * int; mutable possible : int list }
 
-type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  mutable minimalen: int; mutable za_resevanje: available list} 
+type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available list} 
 
-let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[] ; minimalni=[([],Vrstica)]; minimalen=9}
+
 
 let daj_na_izracun objekt = 
   let rec daj_na_izracun_aux acc = function
@@ -480,16 +474,16 @@ let daj_na_izracun objekt =
       | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
 in daj_na_izracun_aux [] objekt.min_indeksi
 
-let minimalna_dolzina_manjkajocih (state) = 
-  let vrstice = cal_empty Vrstica state.current_grid in
+let minimalna_dolzina_manjkajocih (grid) = 
+  let vrstice = cal_empty Vrstica grid in
   let minimalen = ref vrstice.min_dolzina in
-  let stolpci = cal_empty Stolpec state.current_grid in 
+  let stolpci = cal_empty Stolpec grid in 
     if stolpci.min_dolzina < !minimalen then 
       minimalen:= stolpci.min_dolzina;
-  let boxi = cal_empty Box state.current_grid in 
+  let boxi = cal_empty Box grid in 
   if boxi.min_dolzina < !minimalen then 
     minimalen:= boxi.min_dolzina;
-  state.minimalen <- !minimalen
+  !minimalen
 
 
 (* let prazne_moznosti sez_noneov manjkajoci_v_vrsticah manjkajoci_v_stolpcih manjkajoci_v_boxih = 
@@ -531,28 +525,29 @@ let zapisi_minimalne (state)=
       | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
 in daj_na_izracun_aux [] objekt.min_indeksi *)
 
-
+let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni2.initial_grid) }
 
 let prazne_moznosti sez_noneov (state) = 
   let rec prazne_moznosti_aux acc = function
-      | [] -> acc
+      | [] ->  Array.of_list acc
       | (x,y) :: xs -> let skupni = presek3eh (state.vrstice.manjkajoci.(x)) (state.stolpci.manjkajoci.(y)) (state.boxi.manjkajoci.((izracun_boxa_iz_koordinat x y))) in 
-                        let podatekxy = {loc=(x,y); possible=skupni}
+                        let podatekxy = {loc=(x,y); possible= skupni}
                         in 
                         prazne_moznosti_aux (podatekxy::acc) (xs)
 in prazne_moznosti_aux [] sez_noneov
 
+(*spremeni,da vemo se indekse katerih unija je to*)
 
 let za_vsak_min_objekt_izracunaj indeksi (objekt) (state)= 
   let rec daj_na_izracun_aux acc = function
-     | [] -> acc
+     | [] -> Array.of_list acc
      | x::xs ->let rez = prazne_moznosti (objekt.indeksi_praznih.(x)) (state) in
                 daj_na_izracun_aux (rez::acc) (xs)
 in daj_na_izracun_aux [] indeksi 
 
 let za_vse_minimalne (state) = 
   let rec za_vse_minimalne_aux acc = function
-      | [] -> acc
+      | [] -> Array.of_list acc
       | (x,y)::xs -> match y with 
                       | Vrstica -> let vsi_od_vrstic = za_vsak_min_objekt_izracunaj (x) (state.vrstice) (state) in
                                     za_vse_minimalne_aux (vsi_od_vrstic::acc) xs
@@ -575,9 +570,128 @@ in za_vse_minimalne_aux [] state.minimalni
   let zapisi_minimalne (state) in 
 in boljse_moznosti_aux [] state.minimalni *)
 
+(*possible list je urejen narascajoce*)
+(*primerja glavi obeh listov, ce sta enaki da glavo na acc in gre pri obeh gledat naslednjega ce pa je npr. [5,7] [7] ->
+  5 da na acc s 7 pocaka ce bo naslednja glava njej enaka *)
+let unija_2eh_listov i j = 
+  let rec unija_dveh_rec acc = function
+      | ([],[]) -> acc
+      | ([],y) -> y @ acc
+      | (x, []) -> x @ acc
+      | (x::xs, y::ys) -> if x = y then  unija_dveh_rec (x :: acc) (xs,ys) 
+                           else  
+                            if x < y then unija_dveh_rec (x:: acc) (xs, y::ys)
+                             else 
+                              unija_dveh_rec (y::acc) (x::xs, ys)
+in unija_dveh_rec [] (i,j)
+(*Zaenkrat vrne padajoce*)         
+ 
+(*najdaljsa unija je dolzine 1 manj od vseh praznih (brezveze cekirart unijo vseh sej ves da morjo prit sm)*)
+let boxic = prazne_moznosti (state2.boxi.indeksi_praznih.(2)) state2 
 
+let n=3 and m=3
+
+let taille = n*m
+
+
+
+
+let apply_sequence f x n = 
+  let rec apply_sequence_aux  acc x m = 
+    if m > 0 then 
+      apply_sequence_aux (x::acc) (f x) (m-1)
+    else
+      (x :: acc)
+  in 
+  apply_sequence_aux [] x n
+
+
+
+let k = [[1;5;7]; [1;5]; [1;7]]
+
+let ali_je_dobra_unija arrunija indeksi = 
+  let prava_unija unija =
+    let zacetni = ref [] in
+    for i = 0 to 8 do 
+      if unija.(i) <> None then zacetni := (i+1):: !zacetni;
+    done;
+    (!zacetni) 
+  in 
+  let rez = prava_unija arrunija in
+  if List.length rez = List.length indeksi
+    then Some (rez, indeksi)
+  else  None
+
+
+let unija possiblesi indeksi = 
+  let vsi= Array.make 9 None in 
+  let rec ali_vsebuje dolzina = function
+      | [] ->  ali_je_dobra_unija vsi indeksi
+      | x :: xs -> if vsi.(x-1) = None then vsi.(x-1) <- Some x;
+                    ali_vsebuje dolzina xs
+in ali_vsebuje indeksi (List.flatten possiblesi)
+
+let loci_indekse possible = 
+  let rec loci_indekse_aux acc_possiblesi acc_indeksi = function
+     | [] ->  unija acc_possiblesi acc_indeksi 
+     | (p, ind) :: xs -> loci_indekse_aux (p::acc_possiblesi) (ind::acc_indeksi) (xs)
+in loci_indekse_aux [] [] possible
+     
+(* loci_indekse [([1;5;7],0);([1;5],1);([1;7],2)];;
+- : (int list * int list) option = Some ([7; 5; 1], [2; 1; 0])  *)
+(*some x -> treba obrnit*)
+(* let vmesna = function 
+    | Some x -> odstrani_iz_moznosti "vrstica" *)
+let odstrani_iz_sez availabalsi index j = 
+  let rec odstrani_iz_sez_rec acc = function
+      | ([],[]) -> availabalsi.(index).possible <- (List.rev acc)
+      | ([],y) -> availabalsi.(index).possible <- (List.rev acc)
+      | (x, []) -> availabalsi.(index).possible <- (List.rev x @ acc)
+      | (x::xs, y::ys) -> if x = y then  odstrani_iz_sez_rec (acc) (xs,ys) 
+                            else  
+                              if x < y then odstrani_iz_sez_rec (x::(acc)) (xs, y::ys)
+                                else 
+                                   odstrani_iz_sez_rec (acc) (x::xs, ys)
+in odstrani_iz_sez_rec [] ((availabalsi.(index).possible), j)
+
+
+(* # odstrani_iz_sez boxic 1 [1;5;7] ;;
+- : unit = ()
+# boxic ;;
+- : available array =
+[|{loc = (0, 7); possible = [1; 5; 7]}; {loc = (0, 8); possible = [6]}; 
+  {loc = (1, 6); possible = [1; 5]}; {loc = (2, 7); possible = [1; 7]}|]
+# *)
+
+(* let odstrani_iz_moznosti (availabalsi : available array) (za_odstranit, indeksi) = 
+   let rec odstrani_aux index = 
+    if List.mem index indeksi then odstrani_aux (index+1)
+    else
+      ostrani_iz_sez (availabalsi) (index) (za_odstranit);
+      odstrani_aux (index+1)
+in odstrani_aux 0  *)
 
 
 
 (*samo za vsako vrstico box in stolpec ki je min mors to narest*)
 (*for manjkajoci in min_objekt count possible places -if 1 resi or if possible 1 *)
+(*izmed n elementov (mnozice moznih za vsako prazno celico v objektu) izbiramo k elementov( za unijo) gre po formuli :
+   (n C k)= ((n-1)C(k-1)) + ((n-1)C(k))*)
+let vse_podmnozice possiblesi =
+  let rec vse_k_podmnozice k list =
+      if k <= 0 then [[]]
+      else 
+        match list with
+          | [] -> []
+          | x :: xs ->
+              let z_x_om = List.map (fun l -> x :: l) (vse_k_podmnozice (k - 1) xs) in
+              let brez_x_a = vse_k_podmnozice k xs in
+              z_x_om @ brez_x_a
+  in 
+  let dolzina = List.length possiblesi in  
+  let vsi = ref [] in
+  for i = 2 to dolzina - 1 do 
+    vsi := (vse_k_podmnozice i possiblesi )::(!vsi)
+  done; 
+  (List.flatten !vsi)
+
