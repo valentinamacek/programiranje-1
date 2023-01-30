@@ -464,7 +464,7 @@ let f x =
 
 type available = { loc : int * int; mutable possible : int list }
 
-type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available list} 
+type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available array array array; mutable delej:  (int list list * int list) list} 
 
 
 
@@ -525,7 +525,9 @@ let zapisi_minimalne (state)=
       | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
 in daj_na_izracun_aux [] objekt.min_indeksi *)
 
-let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni2.initial_grid) }
+let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni2.initial_grid) ; delej=[([],[])] }
+
+let state1 = {problem=osnovni; current_grid=osnovni.initial_grid;  vrstice=cal_empty Vrstica osnovni.initial_grid ; stolpci= cal_empty Stolpec osnovni.initial_grid; boxi= cal_empty Box osnovni.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni.initial_grid) ; delej=[([],[])] }
 
 let prazne_moznosti sez_noneov (state) = 
   let rec prazne_moznosti_aux acc = function
@@ -547,7 +549,7 @@ in daj_na_izracun_aux [] indeksi
 
 let za_vse_minimalne (state) = 
   let rec za_vse_minimalne_aux acc = function
-      | [] -> Array.of_list acc
+      | [] -> state.za_resevanje <- (Array.of_list acc)
       | (x,y)::xs -> match y with 
                       | Vrstica -> let vsi_od_vrstic = za_vsak_min_objekt_izracunaj (x) (state.vrstice) (state) in
                                     za_vse_minimalne_aux (vsi_od_vrstic::acc) xs
@@ -589,60 +591,16 @@ in unija_dveh_rec [] (i,j)
 (*najdaljsa unija je dolzine 1 manj od vseh praznih (brezveze cekirart unijo vseh sej ves da morjo prit sm)*)
 let boxic = prazne_moznosti (state2.boxi.indeksi_praznih.(2)) state2 
 
-let n=3 and m=3
-
-let taille = n*m
 
 
 
 
-let apply_sequence f x n = 
-  let rec apply_sequence_aux  acc x m = 
-    if m > 0 then 
-      apply_sequence_aux (x::acc) (f x) (m-1)
-    else
-      (x :: acc)
-  in 
-  apply_sequence_aux [] x n
 
 
 
 let k = [[1;5;7]; [1;5]; [1;7]]
 
-let ali_je_dobra_unija arrunija indeksi = 
-  let prava_unija unija =
-    let zacetni = ref [] in
-    for i = 0 to 8 do 
-      if unija.(i) <> None then zacetni := (i+1):: !zacetni;
-    done;
-    (!zacetni) 
-  in 
-  let rez = prava_unija arrunija in
-  if List.length rez = List.length indeksi
-    then Some (rez, indeksi)
-  else  None
-
-
-let unija possiblesi indeksi = 
-  let vsi= Array.make 9 None in 
-  let rec ali_vsebuje dolzina = function
-      | [] ->  ali_je_dobra_unija vsi indeksi
-      | x :: xs -> if vsi.(x-1) = None then vsi.(x-1) <- Some x;
-                    ali_vsebuje dolzina xs
-in ali_vsebuje indeksi (List.flatten possiblesi)
-
-let loci_indekse possible = 
-  let rec loci_indekse_aux acc_possiblesi acc_indeksi = function
-     | [] ->  unija acc_possiblesi acc_indeksi 
-     | (p, ind) :: xs -> loci_indekse_aux (p::acc_possiblesi) (ind::acc_indeksi) (xs)
-in loci_indekse_aux [] [] possible
-     
-(* loci_indekse [([1;5;7],0);([1;5],1);([1;7],2)];;
-- : (int list * int list) option = Some ([7; 5; 1], [2; 1; 0])  *)
-(*some x -> treba obrnit*)
-(* let vmesna = function 
-    | Some x -> odstrani_iz_moznosti "vrstica" *)
-let odstrani_iz_sez availabalsi index j = 
+let odstrani_iz_sez availabalsi index elementi_iz_unije = 
   let rec odstrani_iz_sez_rec acc = function
       | ([],[]) -> availabalsi.(index).possible <- (List.rev acc)
       | ([],y) -> availabalsi.(index).possible <- (List.rev acc)
@@ -652,7 +610,61 @@ let odstrani_iz_sez availabalsi index j =
                               if x < y then odstrani_iz_sez_rec (x::(acc)) (xs, y::ys)
                                 else 
                                    odstrani_iz_sez_rec (acc) (x::xs, ys)
-in odstrani_iz_sez_rec [] ((availabalsi.(index).possible), j)
+in odstrani_iz_sez_rec [] ((availabalsi.(index).possible), elementi_iz_unije)
+
+
+  (* let izlusci_possiblese x = 
+     let rec izlusci_possiblese_aux acc = function
+       | [] -> 
+  in izlusci_possiblese_aux [] Array.of_list x 
+  in
+  let pridobi_vsebino arry = Array.map (fun x -> izlusci_possiblese x ) arry in
+Array.iter (fun x-> pridobi_vsebino x ) arr *)
+
+
+let odstrani_iz_moznosti (availabalsi : available array) (za_odstranit, indeksi) = 
+    for i=0 to Array.length (availabalsi) -1  do 
+      if List.mem i indeksi= false then 
+        odstrani_iz_sez (availabalsi) (i) (za_odstranit);
+    done
+
+
+let ali_je_dobra_unija arrunija indeksi state i j= 
+  let prava_unija unija =
+    let zacetni = ref [] in
+    for k = 0 to 8 do 
+      if unija.(k) <> None then zacetni := (k+1):: !zacetni;
+    done;
+    (!zacetni) 
+  in 
+  let rez = prava_unija arrunija in
+  if List.length rez = List.length indeksi then  odstrani_iz_moznosti (state.za_resevanje.(i).(j)) (List.rev rez, indeksi)
+
+
+let unija2 possiblesi indeksi  (state) (i) (j)= 
+  let vsi= Array.make 9 None in 
+  let rec ali_vsebuje = function
+      | [] ->  ali_je_dobra_unija (vsi) (indeksi) (state) (i) (j)
+      | x :: xs -> if vsi.(x-1) = None then vsi.(x-1) <- Some x;
+                    ali_vsebuje xs
+in ali_vsebuje (List.flatten possiblesi) 
+
+let unija (acc1:int list list) (acc2:int list) state i j = 
+  state.delej <- [(acc1, acc2)]
+
+
+let loci_indekse possible state i j = 
+  let rec loci_indekse_aux acc_possiblesi acc_indeksi = function
+     | [] ->  unija2 (acc_possiblesi) (acc_indeksi) (state) (i) (j)
+     | (p, ind) :: xs -> loci_indekse_aux (p::acc_possiblesi) (ind::acc_indeksi) (xs)
+in loci_indekse_aux [] [] possible
+     
+(* loci_indekse [([1;5;7],0);([1;5],1);([1;7],2)];;
+- : (int list * int list) option = Some ([7; 5; 1], [2; 1; 0])  *)
+(*some x -> treba obrnit*)
+(* let vmesna = function 
+    | Some x -> odstrani_iz_moznosti "vrstica" *)
+
 
 
 (* # odstrani_iz_sez boxic 1 [1;5;7] ;;
@@ -663,21 +675,16 @@ in odstrani_iz_sez_rec [] ((availabalsi.(index).possible), j)
   {loc = (1, 6); possible = [1; 5]}; {loc = (2, 7); possible = [1; 7]}|]
 # *)
 
-(* let odstrani_iz_moznosti (availabalsi : available array) (za_odstranit, indeksi) = 
-   let rec odstrani_aux index = 
-    if List.mem index indeksi then odstrani_aux (index+1)
-    else
-      ostrani_iz_sez (availabalsi) (index) (za_odstranit);
-      odstrani_aux (index+1)
-in odstrani_aux 0  *)
+
+
 
 
 
 (*samo za vsako vrstico box in stolpec ki je min mors to narest*)
-(*for manjkajoci in min_objekt count possible places -if 1 resi or if possible 1 *)
 (*izmed n elementov (mnozice moznih za vsako prazno celico v objektu) izbiramo k elementov( za unijo) gre po formuli :
    (n C k)= ((n-1)C(k-1)) + ((n-1)C(k))*)
-let vse_podmnozice possiblesi =
+
+let vse_podmnozice possiblesi state i j=
   let rec vse_k_podmnozice k list =
       if k <= 0 then [[]]
       else 
@@ -692,6 +699,77 @@ let vse_podmnozice possiblesi =
   let vsi = ref [] in
   for i = 2 to dolzina - 1 do 
     vsi := (vse_k_podmnozice i possiblesi )::(!vsi)
-  done; 
-  (List.flatten !vsi)
+  done;
+  (* (List.flatten !vsi) *)
+  let poslji_naprej = List.flatten !vsi in 
+  List.iter (fun x -> loci_indekse (x) (state) (i) (j)) poslji_naprej
+(* 
+let vse_podmnozice sez state i j = 
+  state.delej <- sez *)
+
+  (* # zapisi_minimalne state2 ;;
+  - : unit = ()
+  # za_vse_minimalne state2 ;;
+  - : unit = ()
+  # pridobi_objekt state2 ;; *)
+let presek2 l1 l2  = 
+  let rec presek2eh_aux acc = function
+    | (_, []) -> acc
+    | ([],_ ) -> acc
+    | (x::xs, y::ys)-> if x = y then presek2eh_aux (x::acc) (xs,ys)
+                        else 
+                          if x < y then presek2eh_aux (acc) (xs, y::ys)
+                          else 
+                            presek2eh_aux (acc) (x::xs, ys)
+in presek2eh_aux [] (l1,l2)
+
+(* let rezultat_pregleda_unij (state) =
+  let rec preglej_nove_aux enojni daljsi = 
+
+  (* let matrika_ind = Array.make 9 (Array.make 9 None) in
+  let rec preglej_nove_aux  = function 
+      | [] ->  matrika_ind
+      | x :: xs -> let x_koor, y_koor = x.loc in match matrika_ind.(x_koor).(y_koor) with 
+                   | None -> matrika_ind.(x_koor).(y_koor) <- Some x
+                   | Some y -> y.possible <- presek2eh x y
+                   ;
+                   preglej_nove_aux xs *)
+  in
+  let novi_availablsi = state.za_resevanje|> Array.of_list |> Array.concat|> Array.to_list 
+  in preglej_nove_aux [] [] novi_availablsi *)
+
+(*Nauci se narest sort in sortiraj dobljene possiblese glede na length -> potem ce bodo odspredaj dolzine 1 jih posle na resevanje ne pobrise availablesov zato, da ko resuje dolzine 1 ne gre se enkrat recunat samo tega enga odtsra*)
+
+
+
+
+
+
+let preglej_unije_podmnozic_minov (state) (*(arr : available array array array)*) = 
+zapisi_minimalne state;
+za_vse_minimalne state;
+let arr = state.za_resevanje in 
+for i= 0 to Array.length arr - 1  do 
+  for j=0 to Array.length arr.(i) - 1  do
+    let izlusci_possiblese sez = 
+      let rec izlusci_possiblese_aux index acc = function 
+          | [] -> vse_podmnozice acc (state) (i) (j)
+          | x ::xs -> izlusci_possiblese_aux  (index+1) ((x.possible, index ):: acc) xs
+      in izlusci_possiblese_aux 0 [] (Array.to_list sez)
+    in izlusci_possiblese arr.(i).(j)
+  done;
+done;
+(* 
+let branch_state *)
+(*PREGLEDA vse possiblese ce je moznost samo ena jo resi ce je moznost nobena je napaka ce ne si *)
+(*za pregled possiblesov ki so narascajoce urejeni*)
+
+
+    
+
+
+
+
+
+
 
