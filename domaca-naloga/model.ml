@@ -1,6 +1,8 @@
 (* Pomožni tip, ki predstavlja mrežo *)
 type 'a grid = 'a Array.t Array.t
 
+
+
 (* Funkcije za prikaz mreže.
    Te definiramo najprej, da si lahko z njimi pomagamo pri iskanju napak. *)
 
@@ -129,47 +131,55 @@ let problem_of_string str =
   in
   { initial_grid = grid_of_string cell_of_char str }
 
+
+
+let izracun_boxa_iz_koordinat x y = 
+  x - x mod 3 + y/3
+
+
+
+
+
+  let min_and_rest list =
+    let rec find_min min = function
+        | [] -> min
+        | x :: xs -> if x < min then find_min x xs else find_min min xs
+    in 
+    let rec remove_min min prejsnji  = function
+        |[] -> failwith "to ni to"
+        | x :: xs -> if x = min then (List.rev prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
+    in 
+    match list with 
+     | [] -> None
+     | x :: xs -> 
+       let z = find_min x xs in  
+       Some( z, remove_min z [] list )
   
-(*vrne int list z indeksi vrstic, ki imajo vsaj eno celico neizpolnjeno*)
-let cal_empty vrsta_objekta grid = 
-  let rec empty_aux acc index (*dobis list of arrays*) = function
-      | [] -> List.rev acc
-      | x :: xs -> if (Array.exists (Option.is_none) x ) then (empty_aux (index :: acc) (index + 1) xs )
-                    else (empty_aux (acc) (index + 1) xs)
-in empty_aux [] 0 (vrsta_objekta grid) 
+  let selection_sort lst = 
+    let rec aux ur neur = 
+       match  min_and_rest neur with  
+         | None -> List.rev ur 
+         | Some(x, xs) -> aux (x :: ur) xs
+    in aux [] lst 
+
+
+
+
+
+
 
 (*Pomozn funckije za selection_sort*)
-let min_and_rest list =
-  let rec find_min min = function
-      | [] -> min
-      | x :: xs -> if x < min then find_min x xs else find_min min xs
-  in 
-  let rec remove_min min prejsnji  = function
-      |[] -> failwith "to ni to"
-      | x :: xs -> if x = min then (List.rev prejsnji )@ xs else remove_min min (x :: prejsnji)  xs 
-  in 
-  match list with 
-   | [] -> None
-   | x :: xs -> 
-     let z = find_min x xs in  
-     Some( z, remove_min z [] list )
 
-let selection_sort lst = 
-  let rec aux ur neur = 
-     match  min_and_rest neur with  
-       | None -> List.rev ur 
-       | Some(x, xs) -> aux (x :: ur) xs
-  in aux [] lst 
 (*Poisce katera stevila med 1 in 9 manjkajo v seznamu pridobljen iz elementov v vrstici/stolpcu/boxu*)
 (*+ preveri, ce sta kaksna dva elementa v seznamu enaka*)
-let manjkajoci (list: int list) = 
-  let rec manjkajoci_aux acc = function
+let manjkajoci2 (list: int list) = 
+  let rec manjkajoci_aux2 acc = function
       | [] -> Some acc
       | [x] -> Some acc
-      | x :: y :: xs -> if x + 1 = y then manjkajoci_aux (acc) (y :: xs) else 
+      | x :: y :: xs -> if x + 1 = y then manjkajoci_aux2 (acc) (y :: xs) else 
         if x = y then None
-        else manjkajoci_aux ((x+1) :: acc) ((x+1)::y::xs)
-in manjkajoci_aux [] (selection_sort (0 ::(10) :: list))
+        else manjkajoci_aux2 ((x+1) :: acc) ((x+1)::y::xs)
+in manjkajoci_aux2 [] (selection_sort (0 ::(10) :: list))
 
 
 (* Model za izhodne rešitve *)
@@ -186,5 +196,5 @@ let is_valid_solution problem solution =
     | ([], []) -> true
     | ([], _) -> false
     | (_, []) -> false
-    | (x :: xs, y:: ys) -> if (manjkajoci (Array.to_list (x ))= Some []) && (manjkajoci (Array.to_list (y)) = Some []) then preveri (xs) (ys) else false
+    | (x :: xs, y:: ys) -> if (manjkajoci2 (Array.to_list (x ))= Some []) && (manjkajoci2 (Array.to_list (y)) = Some []) then preveri (xs) (ys) else false
 in preveri (rows solution) (columns solution)

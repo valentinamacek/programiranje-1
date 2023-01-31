@@ -156,7 +156,7 @@ let swap a i j =
 let index_min a lower upper = 
   let im = ref lower in
   for i = lower to upper do 
-     if a.(i) < a.(!im) then im := i (*ker ma prirejanje tip unit ne rabmo narest elsa*)
+     if List.length a.(i).possible < List.length a.(!im).possible then im := i (*ker ma prirejanje tip unit ne rabmo narest elsa*)
   done;
   !im
 

@@ -464,7 +464,7 @@ let f x =
 
 type available = { loc : int * int; mutable possible : int list }
 
-type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available array array array; mutable delej:  (int list list * int list) list} 
+type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available array array array} 
 
 
 
@@ -525,9 +525,9 @@ let zapisi_minimalne (state)=
       | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
 in daj_na_izracun_aux [] objekt.min_indeksi *)
 
-let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni2.initial_grid) ; delej=[([],[])] }
+let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni2.initial_grid)}
 
-let state1 = {problem=osnovni; current_grid=osnovni.initial_grid;  vrstice=cal_empty Vrstica osnovni.initial_grid ; stolpci= cal_empty Stolpec osnovni.initial_grid; boxi= cal_empty Box osnovni.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni.initial_grid) ; delej=[([],[])] }
+let state1 = {problem=osnovni; current_grid=osnovni.initial_grid;  vrstice=cal_empty Vrstica osnovni.initial_grid ; stolpci= cal_empty Stolpec osnovni.initial_grid; boxi= cal_empty Box osnovni.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni.initial_grid)}
 
 let prazne_moznosti sez_noneov (state) = 
   let rec prazne_moznosti_aux acc = function
@@ -649,8 +649,7 @@ let unija2 possiblesi indeksi  (state) (i) (j)=
                     ali_vsebuje xs
 in ali_vsebuje (List.flatten possiblesi) 
 
-let unija (acc1:int list list) (acc2:int list) state i j = 
-  state.delej <- [(acc1, acc2)]
+
 
 
 let loci_indekse possible state i j = 
@@ -723,6 +722,8 @@ let presek2 l1 l2  =
                             presek2eh_aux (acc) (x::xs, ys)
 in presek2eh_aux [] (l1,l2)
 
+
+
 (* let rezultat_pregleda_unij (state) =
   let rec preglej_nove_aux enojni daljsi = 
 
@@ -738,8 +739,53 @@ in presek2eh_aux [] (l1,l2)
   let novi_availablsi = state.za_resevanje|> Array.of_list |> Array.concat|> Array.to_list 
   in preglej_nove_aux [] [] novi_availablsi *)
 
-(*Nauci se narest sort in sortiraj dobljene possiblese glede na length -> potem ce bodo odspredaj dolzine 1 jih posle na resevanje ne pobrise availablesov zato, da ko resuje dolzine 1 ne gre se enkrat recunat samo tega enga odtsra*)
+ (* Nauci se narest sort in sortiraj dobljene possiblese glede na length -> potem ce bodo odspredaj dolzine 1 jih posle na resevanje  *)
 
+
+   
+
+
+
+(* 
+let branch_state *)
+(*PREGLEDA vse possiblese ce je moznost samo ena jo resi ce je moznost nobena je napaka ce ne si *)
+(*za pregled possiblesov ki so narascajoce urejeni*)
+let swap a i j = 
+  let v = a.(i) in
+  a.(i) <- a.(j);
+  a.(j) <- v 
+
+let index_min a lower upper = 
+  let im = ref lower in
+  for i = lower to upper do 
+     if List.length a.(i).possible < List.length a.(!im).possible then im := i (*ker ma prirejanje tip unit ne rabmo narest elsa*)
+  done;
+  !im
+
+let selection_sort_array av = 
+  let najprej =  Array.map (fun x -> Array.concat (Array.to_list (x))) av in
+  let a= najprej|> Array.to_list |> Array.concat in 
+  let index_end = Array.length a - 1 in 
+  for boundary_sorted = 0 to index_end do 
+      let i = index_min a boundary_sorted index_end in
+      swap a i boundary_sorted (* najmanjsi element ki smo ga nasli zamenjamo na tisto mesto, kjer je trenutno nasa meja*)
+  done;
+  a
+
+
+
+let odstrani_enake_in_uredi_enojne urejen_array = 
+  let rec daj_na_branch acc1 acc2 loci = function
+      | [] -> Some(acc1, List.rev acc2)
+      | x :: xs -> if List.mem x.loc loci then 
+                      daj_na_branch acc1 acc2 loci xs else
+                     if List.length x.possible = 1 then 
+                      daj_na_branch (x::acc1) (acc2) (x.loc :: loci) xs
+                      else 
+                        if List.length x.possible = 0 then None 
+                        else
+                        daj_na_branch (acc1) (x::acc2) (x.loc :: loci) xs      
+in daj_na_branch [] [] [] (Array.to_list urejen_array)
 
 
 
@@ -758,15 +804,65 @@ for i= 0 to Array.length arr - 1  do
       in izlusci_possiblese_aux 0 [] (Array.to_list sez)
     in izlusci_possiblese arr.(i).(j)
   done;
-done;
-(* 
-let branch_state *)
-(*PREGLEDA vse possiblese ce je moznost samo ena jo resi ce je moznost nobena je napaka ce ne si *)
-(*za pregled possiblesov ki so narascajoce urejeni*)
-
-
+done
     
+let nova_grid i j element grid = 
+  Array.init 9 (fun vrstica -> Array.init 9 (fun st -> if st = j && i = vrstica then (Some element) else grid.(vrstica).(st)))
 
+
+
+let odstrani av_element arra novi_element = 
+  let rec odstrani_aux nova_arr = function
+    | [] -> Array.of_list (novi_element :: nova_arr )
+    | x ::xs -> if x.loc = av_element.loc then 
+                  odstrani_aux nova_arr xs
+                else 
+                  odstrani_aux (x::nova_arr) xs
+in odstrani_aux [] (Array.to_list arra)
+           
+let izpolni_enojce lst_enojci grid = 
+    let nova_grid = copy_grid grid in
+    let rec izpolni_enojce_aux = function
+        | [] -> nova_grid
+        | s:: xs -> let x,y = s.loc in 
+                    let enojec = List.nth (s.possible) 0 in 
+                     nova_grid.(x).(y) <- Some enojec;
+                     izpolni_enojce_aux xs
+  in izpolni_enojce_aux lst_enojci
+
+
+
+
+
+
+
+
+
+let branch_state (state) = 
+  if state.za_resevanje =[||] then preglej_unije_podmnozic_minov state ;
+  let update_av = selection_sort_array state.za_resevanje in
+  match odstrani_enake_in_uredi_enojne (update_av) with 
+  | None -> None 
+  | Some([],[]) -> None
+  | Some([], drugi) -> let izbira = List.nth drugi 0 in 
+                        (*ze prej bi prislo do napake ce bi bila prazni possiblesi*)
+                       let element = List.nth (izbira.possible) 0 in
+                       let x,y = izbira.loc in
+                       let izpolnjena_cell = nova_grid (x) (y) (element) state.current_grid in
+                       let ostali = List.filter (fun x -> x <> element) izbira.possible in 
+                       let novi_av = {loc=(x,y); possible=ostali} in 
+                       let za_resevanje = odstrani (izbira) (update_av) (novi_av) in 
+                       let novi_state_za_resevanje = [|[|za_resevanje|]|] in
+                       let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih izpolnjena_cell; za_resevanje=[||] } in
+                       let state2 = {problem=state.problem; current_grid=copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi; minimalni=state.minimalni; minimalen=state.minimalen; za_resevanje=novi_state_za_resevanje} in
+                       Some(state1, Some state2)
+  | Some(enojci,_) -> let nova = izpolni_enojce (enojci) state.current_grid in
+                      let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih nova; za_resevanje=[||] } in
+                      Some(state_od_enojcev,None)
+                      
+                       (*mora se odlocit med drugimi possiblesi v listu*)
+
+     
 
 
 
