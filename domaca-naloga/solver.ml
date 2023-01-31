@@ -1,16 +1,13 @@
-(* type available = { loc : int * int; possible : int list }
 
 (* TODO: tip stanja ustrezno popravite, saj boste med reševanjem zaradi učinkovitosti
    želeli imeti še kakšno dodatno informacijo *)
-type state = { problem : Model.problem; current_grid : int option Model.grid; empty_rows : int list ; available : available option} *)
-type available = { loc : int * int; mutable possible : int list }
+
+  type available = { loc : int * int; mutable possible : int list }
 
   type objekt = Vrstica | Stolpec | Box 
   
   type lastnosti_objekta = { indeksi_praznih : (int * int) list array ; vrsta : objekt ; manjkajoci : int list array ; min_dolzina : int ; min_indeksi: int list}
-  (*zelimo zabelezit indekse noneov za vsako vrstico posebaj in zabelezit [[indeksi_none 0-te vrstice]; [indeksi_none---]]*)
-
-
+  
 
 
   let manjkajoci (list: int list) = 
@@ -22,19 +19,7 @@ type available = { loc : int * int; mutable possible : int list }
   in manjkajoci_aux [] (Model.selection_sort (0 ::(10) :: list))
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   
   let izracun_koordinat_iz_boxa box_ind el_v_boxu = 
     let vrstica = box_ind -(box_ind mod 3) + el_v_boxu / 3 in
@@ -52,6 +37,7 @@ type available = { loc : int * int; mutable possible : int list }
                                 in v_objektu_aux ((x,y):: acc_none) (acc_zasedeni) (index_druge + 1) (xs)
     in v_objektu_aux [] [] 0 (Array.to_list arr_objekta)
   
+
   let cal_empty vrsta_objekta grid = 
     let rec empty_rows_aux acc_prazni acc_manjkajoci min min_indexi index (*dobis list of arrays*) = function
         | [] -> {indeksi_praznih = Array.of_list (List.rev acc_prazni); vrsta=vrsta_objekta; manjkajoci= Array.of_list (List.rev acc_manjkajoci);
@@ -74,28 +60,27 @@ type available = { loc : int * int; mutable possible : int list }
         | Stolpec -> empty_rows_aux [] [] 9 [] 0 (Model.columns grid)
         | Box -> empty_rows_aux [] [] 9 [] 0 (Model.boxes grid)
 
-        let daj_na_izracun objekt = 
-          let rec daj_na_izracun_aux acc = function
-              | [] -> List.flatten acc
-              | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
-        in daj_na_izracun_aux [] objekt.min_indeksi
-        
-        let minimalna_dolzina_manjkajocih (grid) = 
-          let vrstice = cal_empty Vrstica grid in
-          let minimalen = ref vrstice.min_dolzina in
-          let stolpci = cal_empty Stolpec grid in 
-            if stolpci.min_dolzina < !minimalen then 
-              minimalen:= stolpci.min_dolzina;
-          let boxi = cal_empty Box grid in 
-          if boxi.min_dolzina < !minimalen then 
-            minimalen:= boxi.min_dolzina;
-          !minimalen
+let daj_na_izracun objekt = 
+  let rec daj_na_izracun_aux acc = function
+      | [] -> List.flatten acc
+      | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
+  in daj_na_izracun_aux [] objekt.min_indeksi
+
+let minimalna_dolzina_manjkajocih (grid) = 
+  let vrstice = cal_empty Vrstica grid in
+  let minimalen = ref vrstice.min_dolzina in
+  let stolpci = cal_empty Stolpec grid in 
+    if stolpci.min_dolzina < !minimalen then 
+      minimalen:= stolpci.min_dolzina;
+  let boxi = cal_empty Box grid in 
+  if boxi.min_dolzina < !minimalen then 
+    minimalen:= boxi.min_dolzina;
+  !minimalen
 
 
 
 
-
-
+(*izracuna mozne za prazno celico ki so presek moznih za vrstico, stolpca in boxa v kateri je*)
 let presek3eh stolpec vrstica box = 
   let rec presek3eh_aux acc = function
       | (_,[],_) -> acc
@@ -112,13 +97,6 @@ let presek3eh stolpec vrstica box =
                                   if z = mini then noviz := z :: !noviz;
                                   presek3eh_aux (acc) (!novix, !noviy, !noviz)
 in presek3eh_aux [] (stolpec,vrstica, box)
-
-
-
-
-
-
-
 
 
 type state = { problem : Model.problem; current_grid : int option Model.grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available array array array} 
@@ -208,6 +186,8 @@ let izpolni_enojce lst_enojci grid =
                         za_vse_minimalne_aux (vsi_od_boxov::acc) xs
   in za_vse_minimalne_aux [] state.minimalni
   
+
+  (*Naslednje funkcije izracunajo unije seznamov  *)
   let odstrani_iz_sez availabalsi index elementi_iz_unije = 
     let rec odstrani_iz_sez_rec acc = function
         | ([],[]) -> availabalsi.(index).possible <- (List.rev acc)
@@ -331,11 +311,6 @@ let izpolni_enojce lst_enojci grid =
                             daj_na_branch (acc1) (x::acc2) (x.loc :: loci) xs      
     in daj_na_branch [] [] [] (Array.to_list urejen_array)
     
-
-
-
-
-
 
 (*prvo stanje, drugo stanje*)
   (* TODO: Pripravite funkcijo, ki v trenutnem stanju poišče hipotezo, glede katere

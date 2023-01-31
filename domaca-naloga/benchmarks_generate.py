@@ -67,4 +67,4 @@ sudokus = [
     if filename.endswith(".sdk")
 ]
 
-# add_benchmarks("ImePriimek", sudokus, "benchmarks.csv")
+add_benchmarks("ImePriimek", sudokus, "benchmarks.csv")
