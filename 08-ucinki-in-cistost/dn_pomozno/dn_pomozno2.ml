@@ -464,7 +464,7 @@ let f x =
 
 type available = { loc : int * int; mutable possible : int list }
 
-type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available array array array} 
+type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable za_resevanje: available array array array} 
 
 
 
@@ -509,7 +509,7 @@ in prazne_moznosti_aux [] sez_noneov *)
         if x < min then 
 
    if state.stolpci.min_dolzina = state.minimalen then *)
-let zapisi_minimalne (state)=
+(* let zapisi_minimalne (state)=
    let mini = ref [] in
    if state.vrstice.min_dolzina = state.minimalen then 
      mini := (state.vrstice.min_indeksi, Vrstica)::!mini;
@@ -517,7 +517,7 @@ let zapisi_minimalne (state)=
     mini := (state.stolpci.min_indeksi, Stolpec)::!mini;
    if state.boxi.min_dolzina = state.minimalen then
     mini := (state.boxi.min_indeksi, Box)::!mini; 
-  state.minimalni <- !mini
+  state.minimalni <- !mini *)
 
 (* let daj_na_izracun objekt = 
   let rec daj_na_izracun_aux acc = function
@@ -525,9 +525,9 @@ let zapisi_minimalne (state)=
       | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
 in daj_na_izracun_aux [] objekt.min_indeksi *)
 
-let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni2.initial_grid)}
+let state2 = {problem =osnovni2; current_grid=osnovni2.initial_grid; vrstice= cal_empty Vrstica osnovni2.initial_grid ; stolpci= cal_empty Stolpec osnovni2.initial_grid; boxi= cal_empty Box osnovni2.initial_grid ; za_resevanje=[||]}
 
-let state1 = {problem=osnovni; current_grid=osnovni.initial_grid;  vrstice=cal_empty Vrstica osnovni.initial_grid ; stolpci= cal_empty Stolpec osnovni.initial_grid; boxi= cal_empty Box osnovni.initial_grid ; za_resevanje=[||] ; minimalni=[([],Vrstica)]; minimalen= minimalna_dolzina_manjkajocih (osnovni.initial_grid)}
+let state1 = {problem=osnovni; current_grid=osnovni.initial_grid;  vrstice=cal_empty Vrstica osnovni.initial_grid ; stolpci= cal_empty Stolpec osnovni.initial_grid; boxi= cal_empty Box osnovni.initial_grid ; za_resevanje=[||] }
 
 let prazne_moznosti sez_noneov (state) = 
   let rec prazne_moznosti_aux acc = function
@@ -547,7 +547,20 @@ let za_vsak_min_objekt_izracunaj indeksi (objekt) (state)=
                 daj_na_izracun_aux (rez::acc) (xs)
 in daj_na_izracun_aux [] indeksi 
 
-let za_vse_minimalne (state) = 
+let za_vse_izracunaj (state) = 
+  let vsi_od_vrstic = za_vsak_min_objekt_izracunaj [0;1;2;3;4;5;6;7;8] (state.vrstice) (state) in
+  let vsi_od_stolpcev = za_vsak_min_objekt_izracunaj [0;1;2;3;4;5;6;7;8] (state.stolpci) (state) in
+  let  vsi_od_boxov = za_vsak_min_objekt_izracunaj [0;1;2;3;4;5;6;7;8] (state.boxi) (state) in  
+  let vsi = [|vsi_od_vrstic;vsi_od_stolpcev;vsi_od_boxov|] in 
+  state.za_resevanje <- (vsi)
+
+
+
+
+
+
+
+(* let za_vse_minimalne (state) = 
   let rec za_vse_minimalne_aux acc = function
       | [] -> state.za_resevanje <- (Array.of_list acc)
       | (x,y)::xs -> match y with 
@@ -557,7 +570,7 @@ let za_vse_minimalne (state) =
                       za_vse_minimalne_aux (vsi_od_stolpcev::acc) xs
                       | Box -> let vsi_od_boxov = za_vsak_min_objekt_izracunaj (x) (state.boxi)  (state) in
                       za_vse_minimalne_aux (vsi_od_boxov::acc) xs
-in za_vse_minimalne_aux [] state.minimalni
+in za_vse_minimalne_aux [] state.minimalni *)
 (* let boljse_moznosti (state) = 
   let rec boljse_moznosti_aux acc = function
       | [] -> acc
@@ -702,6 +715,9 @@ let vse_podmnozice possiblesi state i j=
   (* (List.flatten !vsi) *)
   let poslji_naprej = List.flatten !vsi in 
   List.iter (fun x -> loci_indekse (x) (state) (i) (j)) poslji_naprej
+
+(*mora dobit possiblese ([1,2,3],0) (manjkajoci, indeksi)*)
+
 (* 
 let vse_podmnozice sez state i j = 
   state.delej <- sez *)
@@ -792,8 +808,7 @@ in daj_na_branch [] [] [] (Array.to_list urejen_array)
 
 
 let preglej_unije_podmnozic_minov (state) (*(arr : available array array array)*) = 
-zapisi_minimalne state;
-za_vse_minimalne state;
+za_vse_izracunaj state;
 let arr = state.za_resevanje in 
 for i= 0 to Array.length arr - 1  do 
   for j=0 to Array.length arr.(i) - 1  do
@@ -805,6 +820,9 @@ for i= 0 to Array.length arr - 1  do
     in izlusci_possiblese arr.(i).(j)
   done;
 done
+
+(* let preglej_vse_unije state =  *)
+  
     
 let nova_grid i j element grid = 
   Array.init 9 (fun vrstica -> Array.init 9 (fun st -> if st = j && i = vrstica then (Some element) else grid.(vrstica).(st)))
@@ -830,6 +848,55 @@ let izpolni_enojce lst_enojci grid =
                      izpolni_enojce_aux xs
   in izpolni_enojce_aux lst_enojci
 
+  let manjkajoci2 (list: int list) = 
+    let rec manjkajoci_aux2 acc = function
+        | [] -> Some acc
+        | [x] -> Some acc
+        | x :: y :: xs -> if x + 1 = y then manjkajoci_aux2 (acc) (y :: xs) else 
+          if x = y then None
+          else manjkajoci_aux2 ((x+1) :: acc) ((x+1)::y::xs)
+  in manjkajoci_aux2 [] (selection_sort (0 ::(10) :: list))
+ 
+   type solution = int grid
+
+
+  type response = Solved of solution | Unsolved of statenew | Fail of statenew
+
+
+
+
+  let is_valid_solution problem solution = 
+    let rec preveri vrstice stolpci = 
+      match (vrstice, stolpci) with
+      | ([], []) -> true
+      | ([], _) -> false
+      | (_, []) -> false
+      | (x :: xs, y:: ys) -> if (manjkajoci2 (Array.to_list (x ))= Some []) && (manjkajoci2 (Array.to_list (y)) = Some []) then preveri (xs) (ys) else false
+  in preveri (rows solution) (columns solution)
+
+
+  let validate_state (state ) : response =
+    let unsolved =
+      Array.exists (Array.exists Option.is_none) state.current_grid
+    in
+    if unsolved then Unsolved state
+    else
+      (* Option.get ne bo sprožil izjeme, ker so vse vrednosti v mreži oblike Some x *)
+      let solution = map_grid Option.get state.current_grid in
+      if is_valid_solution state.problem solution then Solved solution
+      else Fail state
+
+
+
+
+let print_state (state) : unit =
+  print_grid
+    (function None -> "?" | Some digit -> string_of_int digit)
+    state.current_grid
+
+
+
+
 
 
 
@@ -840,6 +907,8 @@ let izpolni_enojce lst_enojci grid =
 
 let branch_state (state) = 
   if state.za_resevanje =[||] then preglej_unije_podmnozic_minov state ;
+  print_state(state);
+  print_newline ();
   let update_av = selection_sort_array state.za_resevanje in
   match odstrani_enake_in_uredi_enojne (update_av) with 
   | None -> None 
@@ -853,16 +922,65 @@ let branch_state (state) =
                        let novi_av = {loc=(x,y); possible=ostali} in 
                        let za_resevanje = odstrani (izbira) (update_av) (novi_av) in 
                        let novi_state_za_resevanje = [|[|za_resevanje|]|] in
-                       let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih izpolnjena_cell; za_resevanje=[||] } in
-                       let state2 = {problem=state.problem; current_grid=copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi; minimalni=state.minimalni; minimalen=state.minimalen; za_resevanje=novi_state_za_resevanje} in
+                       let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ; za_resevanje=[||] } in
+                       let state2 = {problem=state.problem; current_grid=copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi;  za_resevanje=novi_state_za_resevanje} in
                        Some(state1, Some state2)
   | Some(enojci,_) -> let nova = izpolni_enojce (enojci) state.current_grid in
-                      let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih nova; za_resevanje=[||] } in
+                      let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ;za_resevanje=[||] } in
                       Some(state_od_enojcev,None)
                       
                        (*mora se odlocit med drugimi possiblesi v listu*)
-
+let pridobi_rez  = function
+    | None -> [||]
+    | Some(st, None) -> [|st|]
+    | Some (st1, Some st2) -> [|st1; st2|]
      
+
+let resitev1 = branch_state state1
+let resitev2 = branch_state state2 
+let solu1 = pridobi_rez resitev1 
+let solu2 = pridobi_rez resitev2 
+
+
+let depth = ref 0
+ 
+ (* pogledamo, če trenutno stanje vodi do rešitve *)
+ let rec solve_state (state) =
+   Printf.printf "Solving state %d\n" !depth;
+    print_newline ();
+    incr depth;
+   (* uveljavimo trenutne omejitve in pogledamo, kam smo prišli *)
+   (* TODO: na tej točki je stanje smiselno počistiti in zožiti možne rešitve *) 
+   match validate_state state with
+   | Solved solution ->
+       (* če smo našli rešitev, končamo *)
+       Some solution
+   | Fail fail ->
+       (* prav tako končamo, če smo odkrili, da rešitev ni *)
+       None
+   | Unsolved state' ->
+       (* če še nismo končali, raziščemo stanje, v katerem smo končali *)
+       explore_state state'
+ 
+ and explore_state (state) =
+   (* pri raziskovanju najprej pogledamo, ali lahko trenutno stanje razvejimo *)
+   match branch_state state with
+   | None ->
+       (* če stanja ne moremo razvejiti, ga ne moremo raziskati *)
+       None
+   | Some (st1, Some st2) -> (
+       (* če stanje lahko razvejimo na dve možnosti, poizkusimo prvo *)
+       match solve_state st1 with
+       | Some solution ->
+           (* če prva možnost vodi do rešitve, do nje vodi tudi prvotno stanje *)
+           Some solution
+       | None ->
+           (* če prva možnost ne vodi do rešitve, raziščemo še drugo možnost *)
+           solve_state st2 )
+   | Some (st1, None) ->
+       match solve_state st1 with 
+         | Some solution -> Some solution 
+         | None -> None
 
 
 

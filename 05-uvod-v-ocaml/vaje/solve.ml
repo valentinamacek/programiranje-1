@@ -99,7 +99,7 @@
  in presek3eh_aux [] (stolpec,vrstica, box)
  
  
- type state = { problem : Model.problem; current_grid : int option Model.grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable za_resevanje: available array array array} 
+ type state = { problem : Model.problem; current_grid : int option Model.grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable minimalni: (int list * objekt) list;  minimalen: int; mutable za_resevanje: available array array array} 
  
  let print_state (state : state) : unit =
    Model.print_grid
@@ -109,9 +109,8 @@
  type response = Solved of Model.solution | Unsolved of state | Fail of state
  
  let initialize_state (problem : Model.problem) : state =
-   { current_grid = Model.copy_grid problem.initial_grid; problem=problem ; vrstice=cal_empty Vrstica problem.initial_grid; stolpci= cal_empty Stolpec problem.initial_grid; boxi=cal_empty Box problem.initial_grid ;za_resevanje=[||] }
+   { current_grid = Model.copy_grid problem.initial_grid; problem=problem ; vrstice=cal_empty Vrstica problem.initial_grid; stolpci= cal_empty Stolpec problem.initial_grid; boxi=cal_empty Box problem.initial_grid ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih (problem.initial_grid); za_resevanje=[||] }
  
-
  let validate_state (state : state) : response =
    let unsolved =
      Array.exists (Array.exists Option.is_none) state.current_grid
@@ -148,7 +147,7 @@
    in izpolni_enojce_aux lst_enojci
  
  
-   (* let zapisi_minimalne (state)=
+   let zapisi_minimalne (state)=
    let mini = ref [] in
    if state.vrstice.min_dolzina = state.minimalen then 
      mini := (state.vrstice.min_indeksi, Vrstica)::!mini;
@@ -156,7 +155,7 @@
      mini := (state.stolpci.min_indeksi, Stolpec)::!mini;
    if state.boxi.min_dolzina = state.minimalen then
      mini := (state.boxi.min_indeksi, Box)::!mini; 
-   state.minimalni <- !mini *)
+   state.minimalni <- !mini
    
    let prazne_moznosti sez_noneov (state) = 
      let rec prazne_moznosti_aux acc = function
@@ -175,12 +174,17 @@
                    daj_na_izracun_aux (rez::acc) (xs)
    in daj_na_izracun_aux [] indeksi 
    
-   let za_vse_izracunaj (state) = 
-    let vsi_od_vrstic = za_vsak_min_objekt_izracunaj [0;1;2;3;4;5;6;7;8] (state.vrstice) (state) in
-    let vsi_od_stolpcev = za_vsak_min_objekt_izracunaj [0;1;2;3;4;5;6;7;8] (state.stolpci) (state) in
-    let  vsi_od_boxov = za_vsak_min_objekt_izracunaj [0;1;2;3;4;5;6;7;8] (state.boxi) (state) in  
-    let vsi = [|vsi_od_vrstic;vsi_od_stolpcev;vsi_od_boxov|] in 
-    state.za_resevanje <- (vsi)
+   let za_vse_minimalne (state) = 
+     let rec za_vse_minimalne_aux acc = function
+         | [] -> state.za_resevanje <- (Array.of_list acc)
+         | (x,y)::xs -> match y with 
+                         | Vrstica -> let vsi_od_vrstic = za_vsak_min_objekt_izracunaj (x) (state.vrstice) (state) in
+                                       za_vse_minimalne_aux (vsi_od_vrstic::acc) xs
+                         | Stolpec -> let vsi_od_stolpcev = za_vsak_min_objekt_izracunaj (x) (state.stolpci) (state) in
+                         za_vse_minimalne_aux (vsi_od_stolpcev::acc) xs
+                         | Box -> let vsi_od_boxov = za_vsak_min_objekt_izracunaj (x) (state.boxi)  (state) in
+                         za_vse_minimalne_aux (vsi_od_boxov::acc) xs
+   in za_vse_minimalne_aux [] state.minimalni
    
  
    (*Naslednje funkcije izracunajo unije seznamov  *)
@@ -255,7 +259,8 @@
      List.iter (fun x -> loci_indekse (x) (state) (i) (j)) poslji_naprej
    
    let preglej_unije_podmnozic_minov (state) (*(arr : available array array array)*) = 
-     za_vse_izracunaj state;
+     zapisi_minimalne state;
+     za_vse_minimalne state;
      let arr = state.za_resevanje in 
      for i= 0 to Array.length arr - 1  do 
        for j=0 to Array.length arr.(i) - 1  do
@@ -332,21 +337,18 @@
                           let novi_av = {loc=(x,y); possible=ostali} in 
                           let za_resevanje = odstrani (izbira) (update_av) (novi_av) in 
                           let novi_state_za_resevanje = [|[|za_resevanje|]|] in
-                          let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ;  za_resevanje=[||] } in
-                          let state2 = {problem=state.problem; current_grid=Model.copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi; za_resevanje=novi_state_za_resevanje} in
+                          let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih izpolnjena_cell; za_resevanje=[||] } in
+                          let state2 = {problem=state.problem; current_grid=Model.copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi; minimalni=state.minimalni; minimalen=state.minimalen; za_resevanje=novi_state_za_resevanje} in
                           Some(state1, Some state2)
      | Some(enojci,_) -> let nova = izpolni_enojce (enojci) state.current_grid in
-                         let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ; za_resevanje=[||] } in
+                         let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ; minimalni=[]; minimalen=minimalna_dolzina_manjkajocih nova; za_resevanje=[||] } in
                          Some(state_od_enojcev,None)
                          
                      
-let depth = ref 0
+ 
  
  (* pogledamo, če trenutno stanje vodi do rešitve *)
  let rec solve_state (state : state) =
-   Printf.printf "Solving state %d\n" !depth;
-    print_newline ();
-    incr depth;
    (* uveljavimo trenutne omejitve in pogledamo, kam smo prišli *)
    (* TODO: na tej točki je stanje smiselno počistiti in zožiti možne rešitve *) 
    match validate_state state with
@@ -375,10 +377,8 @@ let depth = ref 0
        | None ->
            (* če prva možnost ne vodi do rešitve, raziščemo še drugo možnost *)
            solve_state st2 )
-   | Some (st1, None) -> 
-      match solve_state st1 with 
-      | Some solution -> Some solution 
-      | None -> None 
-
+   | Some (st1, None) -> solve_state st1 
+ 
  let solve_problem (problem : Model.problem) =
    problem |> initialize_state |> solve_state
+ 
