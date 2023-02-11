@@ -1,6 +1,7 @@
 (* Pomožni tip, ki predstavlja mrežo *)
-
 type 'a grid = 'a Array.t Array.t
+
+
 
 (* Funkcije za prikaz mreže.
    Te definiramo najprej, da si lahko z njimi pomagamo pri iskanju napak. *)
@@ -134,6 +135,8 @@ let izracun_boxa_iz_koordinat x y =
   x - x mod 3 + y/3
 
 
+(*Poisce katera stevila med 1 in 9 manjkajo v seznamu pridobljen iz elementov v vrstici/stolpcu/boxu*)
+(*+ check, ce sta kaksna dva elementa v seznamu enaka*)
 (* Model za izhodne rešitve *)
 
 type solution = int grid
@@ -190,7 +193,7 @@ let manjkajoci (list: int list) =
   manjkajoci_aux [] (List.sort compare za_uredit)
    
  
-(*Naslednje funkcije za vrstice/stolpce/boxe v gridu izracunajo:indekse_praznih in manjkajoce stevilke v posz vrstici/boxu/stolpcu*)
+   (*Naslednje funkcije za vrstice/stolpce/boxe v gridu izracunajo:indekse_praznih in manjkajoce stevilke v posz vrstici/boxu/stolpcu*)
 let izracun_koordinat_iz_boxa box_ind el_v_boxu = 
   let vrstica = box_ind -(box_ind mod 3) + el_v_boxu / 3 in
   let stolpec = (box_ind mod 3) * 3 + el_v_boxu mod 3 in
@@ -266,8 +269,8 @@ let presek3eh stolpec vrstica box =
   in presek3eh_aux [] (stolpec,vrstica, box)
   
 
- (*za vsako vrstico,stolpec in box zapise available array : available: (loc: koordinate prazne celice)
-  (possible: presek manjkajocih v vrstici/stolpcu/boxu v katerem leži)*)
+ (*za vsako vrstico,stolpec in box zapise available array : available: loc--> koordinate prazne celice possible:
+    (presek manjkajocih v vrstici/stolpcu/boxu v katerem leži)*)
 let prazne_moznosti sez_noneov (state) = 
   let rec prazne_moznosti_aux acc = function
       | [] ->  Array.of_list acc
@@ -294,13 +297,12 @@ let za_vse_izracunaj (state) =
   state.za_resevanje <- (vsi)
    
  
-(*Naslednje funkcije izracunajo vse mozne unije v posz vrstici/stolpcu/boxu:
-    npr. so v vrstici prazni elementi z av.possible : [1;5;7]; [1;5];[1;7] [1;5;6;7]
-    Ce naredimo unijo :  [1;5;7]in[1;5]in[1;7] = [1;5;7] (unija moznih za ta 3 mesta so 3 ->
-      te stevilke morajo biti na teh treh mestih zato jih lahko odstranimo iz 
-    seznamov moznih za druga prazna mesta(taka unija je dobra unija) -> moznosti za zadnjo po tem pregledu : [6]) *)
+  (*Naslednje funkcije izracunajo vse mozne unije v posz vrstici/stolpcu/boxu:
+      npr. so v vrstici prazni elementi z av.possible : [1;5;7]; [1;5];[1;7] [1;5;6;7]
+      Ce naredimo unijo :  [1;5;7]in[1;5]in[1;7] = [1;5;7] (unija moznih za ta 3 mesta so 3 ->te stevilke morajo biti na teh treh mestih zato jih lahko odstranimo iz 
+      seznamov moznih za druga prazna mesta(dobra unija) -> v zadnjem samo : [6]) *)
 
-(*elemente iz dobre unije odstrani  iz moznosti za ostala prazna mesta *)
+  (*elemente iz dobre unije odstrani  iz moznosti za ostala prazna mesta *)
 let odstrani_iz_sez availabalsi index elementi_iz_unije = 
   let rec odstrani_iz_sez_rec acc = function
       | ([],[]) -> availabalsi.(index).possible <- (List.rev acc)
@@ -340,6 +342,9 @@ let unija2 possiblesi indeksi  (state) (i) (j)=
                     ali_vsebuje xs
   in ali_vsebuje (List.flatten possiblesi) 
    
+   
+   
+   
 let loci_indekse possible state i j = 
   let rec loci_indekse_aux acc_possiblesi acc_indeksi = function
       | [] ->  unija2 (acc_possiblesi) (acc_indeksi) (state) (i) (j)
@@ -368,7 +373,7 @@ let vse_podmnozice possiblesi state i j=
   List.iter (fun x -> loci_indekse (x) (state) (i) (j)) poslji_naprej
    
 
-(*state.za_resevanje : [|objekti|] npr. vrstice:[|[|posz-vrstica|],[||],..|] za posz_vrstico pregledamo unije*)
+(*state.za_resevanje : [|objekti|] npr. vrstice:[|[|posz-vrstica|]|] za posz_vrstico pogledamo unije*)
 let preglej_unije (state) (*(arr : available array array array)*) = 
   za_vse_izracunaj state;
   let arr = state.za_resevanje in 
@@ -383,8 +388,8 @@ let preglej_unije (state) (*(arr : available array array array)*) =
     done;
   done
  
-(*Iz state.za_resevanje naredi en av(available) array in ga uredi glede na dolzino av.possible
-(da bodo tiste z manj moznimi na zacetku)*)
+ (*Iz state.za_resevanje naredi en av(available) array in ga uredi glede na dolzino av.possible
+    (da bodo tiste z manj moznimi na zacetku)*)
 let swap a i j = 
   let v = a.(i) in
   a.(i) <- a.(j);
@@ -406,7 +411,9 @@ let selection_sort_array av =
       swap a i boundary_sorted (* najmanjsi element ki smo ga nasli zamenjamo na tisto mesto, kjer je trenutno nasa meja*)
   done;
   a
-   
+  
+  
+  
 let odstrani_enake_in_uredi_enojne urejen_array = 
   let rec daj_na_branch acc1 acc2 loci = function
       | [] -> Some(acc1, List.rev acc2)
@@ -427,6 +434,7 @@ let nova_grid i j element grid =
   new_grid.(i).(j) <- Some element; 
   new_grid 
 
+     
 (*reši enojce*)
 let izpolni_enojce lst_enojci grid = 
     let nova_grid = copy_grid grid in
@@ -439,18 +447,18 @@ let izpolni_enojce lst_enojci grid =
     in izpolni_enojce_aux lst_enojci
   
 
-(*pregleda izpolnjeno vrstico/stolpec/box*)
-let check_new arr_el =
-  let lst = Array.to_list arr_el in
+(*pregleda nov dobljen gridd*)
+let check_new arr =
+  let lst = Array.to_list arr in
   let rec collect_options acc = function
     | [] -> acc
-    | None :: xs -> collect_options acc xs
-    | Some x :: xs -> collect_options (x :: acc) xs
+    | None :: tl -> collect_options acc tl
+    | Some x :: tl -> collect_options (x :: acc) tl
   in
   let sorted = List.sort compare (collect_options [] lst) in
   let rec check_consecutive = function
     | [] | [_] -> true
-    | x :: y :: xs -> if x  = y then false else check_consecutive (y :: xs)
+    | x :: y :: tl -> if x  = y then false else check_consecutive (y :: tl)
   in
   check_consecutive sorted
 
@@ -479,6 +487,8 @@ let odstrani av_element stari_av novi_element =
  (*ce izbira(izbira=state1), si neizbrane moznosti zapomne(state2) -> v state2 tudi ze zapise state.za_resevanje*)
  let branch_state (state : state) : (state * state option) option = 
      if state.za_resevanje =[||] then preglej_unije state ;
+     print_state(state);
+     print_newline ();
      let update_av = selection_sort_array state.za_resevanje in
      match odstrani_enake_in_uredi_enojne (update_av) with 
      | None -> None 
@@ -507,9 +517,13 @@ let odstrani av_element stari_av novi_element =
                          else
                           None
                      
+let depth = ref 0
  
  (* pogledamo, če trenutno stanje vodi do rešitve *)
  let rec solve_state (state : state) =
+   Printf.printf "Solving state %d\n" !depth;
+    print_newline ();
+    incr depth;
    (* uveljavimo trenutne omejitve in pogledamo, kam smo prišli *)
    (* TODO: na tej točki je stanje smiselno počistiti in zožiti možne rešitve *) 
    match validate_state state with
