@@ -2,7 +2,7 @@ let read_problem filename =
   let channel = open_in filename in
   let str = really_input_string channel (in_channel_length channel) in
   close_in channel;
-  Solver.problem_of_string str
+  Model.problem_of_string str
 
 let find_solution problem =
   let before = Sys.time () in
@@ -14,12 +14,12 @@ let find_solution problem =
 let display_solution = function
   | Some solution ->
       Printf.printf "Končna rešitev:\n";
-      Solver.print_solution solution
+      Model.print_solution solution
   | None -> Printf.printf "Rešitev ne obstaja.\n"
 
-let find_and_display_solution (problem : Solver.problem) =
+let find_and_display_solution (problem : Model.problem) =
   Printf.printf "Rešujem:\n";
-  Solver.print_problem problem;
+  Model.print_problem problem;
   Printf.printf "\n%!";
   let response, elapsed_time = find_solution problem in
   display_solution response;
@@ -56,6 +56,5 @@ let () =
 ┃814│253│769┃
 ┃695│417│382┃
 ┗━━━┷━━━┷━━━┛"
-  |> Solver.problem_of_string
+  |> Model.problem_of_string
   |> find_and_display_solution *)
-

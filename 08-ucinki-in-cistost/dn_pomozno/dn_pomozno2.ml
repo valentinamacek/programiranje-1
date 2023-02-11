@@ -132,7 +132,7 @@ let foldi_grid (f : int -> int -> 'a -> 'acc -> 'acc) (grid : 'a grid)
   in
   acc
 
-  let min_and_rest list =
+  (* let min_and_rest list =
     let rec find_min min = function
         | [] -> min
         | x :: xs -> if x < min then find_min x xs else find_min min xs
@@ -151,7 +151,7 @@ let foldi_grid (f : int -> int -> 'a -> 'acc -> 'acc) (grid : 'a grid)
        match  min_and_rest neur with  
          | None -> List.rev ur 
          | Some(x, xs) -> aux (x :: ur) xs
-    in aux [] lst 
+    in aux [] lst  *)
 
   
   
@@ -163,11 +163,16 @@ let foldi_grid (f : int -> int -> 'a -> 'acc -> 'acc) (grid : 'a grid)
           if x = y then None
           else manjkajoci_aux ((x+1) :: acc) ((x+1)::y::xs)
   in manjkajoci_aux [] (selection_sort (0 ::(10) :: list)) *)
-  
+  type objekt = Vrstica | Stolpec | Box 
+
+  type lastnosti_objekta = { indeksi_praznih : (int * int) list array ; vrsta : objekt ; manjkajoci : int list array }
+
+  type available = { loc : int * int; mutable possible : int list }
+
+  type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable za_resevanje: available array array array} 
   
 
-  let nova_grid i j element grid = 
-    Array.init 9 (fun vrstica -> Array.init 9 (fun st -> if st = j && i = vrstica then (Some element) else grid.(vrstica).(st)))    
+ 
                       
   (* let izpolni_grid (state) =
       match state.available with 
@@ -318,18 +323,30 @@ let  row_blocks grid =
 let osnovni2 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-2.sdk" 
 let osnovni3 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-9.sdk"
 
+let osnovni6 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-6.sdk"
+let osnovni49 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-49.sdk"
+let osnovni55 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-55.sdk"
+let osnovni60 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-60.sdk"
+let osnovni100 = read_problem "D:\\programiranje_1\\programiranje-1\\domaca-naloga\\sudokuji\\obicajni-100.sdk"
+
 let manjkajoci (list: int list) = 
   let rec manjkajoci_aux acc = function
       | [] -> acc
       | [x] -> acc
       | x :: y :: xs -> if x + 1 = y then manjkajoci_aux (acc) (y :: xs)
         else manjkajoci_aux ((x+1) :: acc) ((x+1)::y::xs)
-in manjkajoci_aux [] (selection_sort (0 ::(10) :: list))
+in  
+let za_uredit = 0::10::list in
+manjkajoci_aux [] (List.sort compare za_uredit)
 
+(* let manjkajoci (list: int list) = 
+  let rec manjkajoci_aux acc = function
+      | [] -> acc
+      | [x] -> x :: acc
+      | x :: y :: xs -> if x + 1 = y then manjkajoci_aux acc (y :: xs)
+        else manjkajoci_aux ((x :: acc) @ [y]) ((x+1) :: (y-1) :: xs)
+  in List.rev (manjkajoci_aux [] (List.sort (0 :: (10) :: list))) *)
 
-type objekt = Vrstica | Stolpec | Box 
-
-type lastnosti_objekta = { indeksi_praznih : (int * int) list array ; vrsta : objekt ; manjkajoci : int list array ; min_dolzina : int ; min_indeksi: int list}
 (*zelimo zabelezit indekse noneov za vsako vrstico posebaj in zabelezit [[indeksi_none 0-te vrstice]; [indeksi_none---]]*)
 let izracun_koordinat_iz_boxa box_ind el_v_boxu = 
   let vrstica = box_ind -(box_ind mod 3) + el_v_boxu / 3 in
@@ -348,26 +365,18 @@ let v_objektu index arr_objekta vrsta(*je array*) =
   in v_objektu_aux [] [] 0 (Array.to_list arr_objekta)
 
 let cal_empty vrsta_objekta grid = 
-  let rec empty_rows_aux acc_prazni acc_manjkajoci min min_indexi index (*dobis list of arrays*) = function
-      | [] -> {indeksi_praznih = Array.of_list (List.rev acc_prazni); vrsta=vrsta_objekta; manjkajoci= Array.of_list (List.rev acc_manjkajoci);
-                min_dolzina= min; min_indeksi=min_indexi}
+  let rec cal_empty_aux acc_prazni acc_manjkajoci index (*dobis list of arrays*) = function
+      | [] -> {indeksi_praznih = Array.of_list (List.rev acc_prazni); vrsta=vrsta_objekta; manjkajoci= Array.of_list (List.rev acc_manjkajoci);}
       | x :: xs -> if (Array.exists (Option.is_none) x ) then 
                      let prazni, manjkajoci = v_objektu (index) (x) (vrsta_objekta) in
-                        let dolzina_manjkajocih = List.length (manjkajoci) in
-                            if dolzina_manjkajocih < min then
-                              (empty_rows_aux (prazni:: acc_prazni) (manjkajoci :: acc_manjkajoci) (dolzina_manjkajocih) ([index]) (index + 1) xs )
-                            else
-                              if dolzina_manjkajocih = min then 
-                                (empty_rows_aux (prazni:: acc_prazni) (manjkajoci :: acc_manjkajoci) (min) (index :: min_indexi) (index + 1) xs )
-                              else
-                                (empty_rows_aux (prazni:: acc_prazni) (manjkajoci :: acc_manjkajoci) (min) (min_indexi) (index + 1) xs )
+                         (cal_empty_aux (prazni:: acc_prazni) (manjkajoci :: acc_manjkajoci)  (index + 1) xs )
                     else 
-                      (empty_rows_aux ([]::acc_prazni) ([]::acc_manjkajoci) (min) (min_indexi) (index + 1) xs)
+                      (cal_empty_aux ([]::acc_prazni) ([]::acc_manjkajoci) (index + 1) xs)
 in 
   match vrsta_objekta with 
-      | Vrstica -> empty_rows_aux [] []  9 [] 0 (rows grid) 
-      | Stolpec -> empty_rows_aux [] [] 9 [] 0 (columns grid)
-      | Box -> empty_rows_aux [] [] 9 [] 0 (boxes grid)
+      | Vrstica -> cal_empty_aux [] []  0 (rows grid) 
+      | Stolpec -> cal_empty_aux [] [] 0 (columns grid)
+      | Box -> cal_empty_aux [] [] 0 (boxes grid)
 
 
 
@@ -425,8 +434,7 @@ let mozni_za_prazno grid =
 in mozni_za_none [] 0 (Array.to_list (box.indeksi_praznih))                                *)
 
 
-(* let najkrajsi objekt_state =
-  let dolzine = objekt_state.manjkajoci in *)
+
 
    
 
@@ -462,28 +470,24 @@ let f x =
   done;
   (!min, !min_indeks) *)
 
-type available = { loc : int * int; mutable possible : int list }
-
-type statenew = { problem : problem; current_grid : int option grid ; vrstice : lastnosti_objekta ; stolpci : lastnosti_objekta ; boxi : lastnosti_objekta; mutable za_resevanje: available array array array} 
 
 
 
-let daj_na_izracun objekt = 
-  let rec daj_na_izracun_aux acc = function
-      | [] -> List.flatten acc
-      | x :: xs-> daj_na_izracun_aux ((objekt.indeksi_praznih.(x))::acc) xs 
-in daj_na_izracun_aux [] objekt.min_indeksi
 
-let minimalna_dolzina_manjkajocih (grid) = 
-  let vrstice = cal_empty Vrstica grid in
-  let minimalen = ref vrstice.min_dolzina in
-  let stolpci = cal_empty Stolpec grid in 
-    if stolpci.min_dolzina < !minimalen then 
-      minimalen:= stolpci.min_dolzina;
-  let boxi = cal_empty Box grid in 
-  if boxi.min_dolzina < !minimalen then 
-    minimalen:= boxi.min_dolzina;
-  !minimalen
+
+let initialize_state (problem : problem) =
+  { problem=problem ;  current_grid = copy_grid (problem.initial_grid); vrstice=cal_empty Vrstica problem.initial_grid; stolpci= cal_empty Stolpec problem.initial_grid; boxi=cal_empty Box problem.initial_grid ;za_resevanje=[||] }
+
+
+
+let s6 = initialize_state osnovni6
+let s49 = initialize_state osnovni49
+let s55 = initialize_state osnovni55
+let s60 = initialize_state osnovni60
+let s100 = initialize_state osnovni100
+
+
+
 
 
 (* let prazne_moznosti sez_noneov manjkajoci_v_vrsticah manjkajoci_v_stolpcih manjkajoci_v_boxih = 
@@ -557,7 +561,9 @@ let za_vse_izracunaj (state) =
 
 
 
-
+  let print_list lst =
+    List.iter (fun { loc = (f1, f2); possible = f3 } -> Printf.printf "field1: (%d, %d), field2: %s\n" f1 f2 (String.concat ", " (List.map string_of_int f3))) lst;;
+  
 
 
 (* let za_vse_minimalne (state) = 
@@ -626,13 +632,6 @@ let odstrani_iz_sez availabalsi index elementi_iz_unije =
 in odstrani_iz_sez_rec [] ((availabalsi.(index).possible), elementi_iz_unije)
 
 
-  (* let izlusci_possiblese x = 
-     let rec izlusci_possiblese_aux acc = function
-       | [] -> 
-  in izlusci_possiblese_aux [] Array.of_list x 
-  in
-  let pridobi_vsebino arry = Array.map (fun x -> izlusci_possiblese x ) arry in
-Array.iter (fun x-> pridobi_vsebino x ) arr *)
 
 
 let odstrani_iz_moznosti (availabalsi : available array) (za_odstranit, indeksi) = 
@@ -727,38 +726,7 @@ let vse_podmnozice sez state i j =
   # za_vse_minimalne state2 ;;
   - : unit = ()
   # pridobi_objekt state2 ;; *)
-let presek2 l1 l2  = 
-  let rec presek2eh_aux acc = function
-    | (_, []) -> acc
-    | ([],_ ) -> acc
-    | (x::xs, y::ys)-> if x = y then presek2eh_aux (x::acc) (xs,ys)
-                        else 
-                          if x < y then presek2eh_aux (acc) (xs, y::ys)
-                          else 
-                            presek2eh_aux (acc) (x::xs, ys)
-in presek2eh_aux [] (l1,l2)
 
-
-
-(* let rezultat_pregleda_unij (state) =
-  let rec preglej_nove_aux enojni daljsi = 
-
-  (* let matrika_ind = Array.make 9 (Array.make 9 None) in
-  let rec preglej_nove_aux  = function 
-      | [] ->  matrika_ind
-      | x :: xs -> let x_koor, y_koor = x.loc in match matrika_ind.(x_koor).(y_koor) with 
-                   | None -> matrika_ind.(x_koor).(y_koor) <- Some x
-                   | Some y -> y.possible <- presek2eh x y
-                   ;
-                   preglej_nove_aux xs *)
-  in
-  let novi_availablsi = state.za_resevanje|> Array.of_list |> Array.concat|> Array.to_list 
-  in preglej_nove_aux [] [] novi_availablsi *)
-
- (* Nauci se narest sort in sortiraj dobljene possiblese glede na length -> potem ce bodo odspredaj dolzine 1 jih posle na resevanje  *)
-
-
-   
 
 
 
@@ -823,10 +791,6 @@ done
 
 (* let preglej_vse_unije state =  *)
   
-    
-let nova_grid i j element grid = 
-  Array.init 9 (fun vrstica -> Array.init 9 (fun st -> if st = j && i = vrstica then (Some element) else grid.(vrstica).(st)))
-
 
 
 let odstrani av_element arra novi_element = 
@@ -838,41 +802,47 @@ let odstrani av_element arra novi_element =
                   odstrani_aux (x::nova_arr) xs
 in odstrani_aux [] (Array.to_list arra)
            
-let izpolni_enojce lst_enojci grid = 
-    let nova_grid = copy_grid grid in
-    let rec izpolni_enojce_aux = function
-        | [] -> nova_grid
-        | s:: xs -> let x,y = s.loc in 
-                    let enojec = List.nth (s.possible) 0 in 
-                     nova_grid.(x).(y) <- Some enojec;
-                     izpolni_enojce_aux xs
-  in izpolni_enojce_aux lst_enojci
 
-  let manjkajoci2 (list: int list) = 
-    let rec manjkajoci_aux2 acc = function
-        | [] -> Some acc
-        | [x] -> Some acc
-        | x :: y :: xs -> if x + 1 = y then manjkajoci_aux2 (acc) (y :: xs) else 
-          if x = y then None
-          else manjkajoci_aux2 ((x+1) :: acc) ((x+1)::y::xs)
-  in manjkajoci_aux2 [] (selection_sort (0 ::(10) :: list))
+
  
+
+
+
+  let rec is_consecutive lst =
+    match List.sort compare lst with
+    | [] | [_] -> true
+    | a :: b :: tl -> if b = a + 1 then is_consecutive (b :: tl) else false
+
+
+
    type solution = int grid
 
 
   type response = Solved of solution | Unsolved of statenew | Fail of statenew
 
-
-
+  let je_pravilna (problem) (vrstica) (indexx) = 
+    let rec je_pravilna_aux indexy = function
+        | [] -> true
+        | x :: xs -> match x with 
+                     | None -> je_pravilna_aux (indexy + 1) xs
+                     | Some b -> if b = vrstica.(indexy) then je_pravilna_aux (indexy +1) (xs) else false
+  in je_pravilna_aux 0 (Array.to_list (problem.initial_grid.(indexx)))
 
   let is_valid_solution problem solution = 
-    let rec preveri vrstice stolpci = 
-      match (vrstice, stolpci) with
-      | ([], []) -> true
-      | ([], _) -> false
-      | (_, []) -> false
-      | (x :: xs, y:: ys) -> if (manjkajoci2 (Array.to_list (x ))= Some []) && (manjkajoci2 (Array.to_list (y)) = Some []) then preveri (xs) (ys) else false
-  in preveri (rows solution) (columns solution)
+    let compare_to_problem (rows: 'a array list) = 
+      let rec compare_to_problem_aux index = function
+          | [] -> true
+          | x::xs -> if je_pravilna (problem) (x) (index) then compare_to_problem_aux (index+1) (xs) else false
+      in compare_to_problem_aux 0 rows
+    in
+    let rec preveri vrstice stolpci boxi = 
+      match (vrstice, stolpci,boxi) with
+      | ([], [],[]) -> compare_to_problem (rows solution)
+      | ([], _,_) -> false
+      | (_, [],_) -> false
+      | (_,_,[]) -> false
+      | (x :: xs, y:: ys, z::zs) -> if (is_consecutive (Array.to_list (x))) && (is_consecutive (Array.to_list (y))) && (is_consecutive (Array.to_list (z))) then preveri (xs) (ys) (zs) else false
+  in preveri (rows solution) (columns solution) (boxes solution)
 
 
   let validate_state (state ) : response =
@@ -895,41 +865,111 @@ let print_state (state) : unit =
     state.current_grid
 
 
+let preglej_nov arr =
+  let lst = Array.to_list arr in
+  let rec collect_options acc = function
+    | [] -> acc
+    | None :: tl -> collect_options acc tl
+    | Some x :: tl -> collect_options (x :: acc) tl
+  in
+  let sorted = List.sort compare (collect_options [] lst) in
+  let rec check_consecutive = function
+    | [] | [_] -> true
+    | x :: y :: tl -> if x  = y then false else check_consecutive (y :: tl)
+  in
+  check_consecutive sorted
+
+  let preglej_celo grid = 
+    let rec preveri vrstice stolpci boxi = 
+      match (vrstice, stolpci, boxi) with
+      | ([], [], []) -> true
+      | ([], _,_) -> false
+      | (_, [],_) -> false
+      | (_,_,[]) -> false
+      | (x :: xs, y:: ys, z:: zs) -> if (preglej_nov (x )) && (preglej_nov (y))&&(preglej_nov (z))  then preveri (xs) (ys) (zs) else false
+  in preveri (rows grid) (columns grid) (boxes grid)
+
+
+  let is_valid_move grid x y el =
+    let vse_vrstice =Array.of_list (rows grid) in 
+    let row_ok = Array.for_all (fun elt -> elt <> Some el) vse_vrstice.(x) in
+    let vsi_stolpci =Array.of_list (columns grid )in
+    let col_ok = Array.for_all (fun elt -> elt <> Some el) vsi_stolpci.(y) in
+    let vsi_boxi =Array.of_list (boxes grid) in 
+    let box_ok = Array.for_all (fun elt -> elt <> Some el) vsi_boxi.(izracun_boxa_iz_koordinat(x) (y))
+    in
+    row_ok && col_ok && box_ok
+  
+
+let are_singles_valid lst_singles grid = 
+  let rec are_singles_valid_aux = function
+    | [] -> true
+    | s:: xs -> let x,y = s.loc in 
+                let single = List.nth s.possible 0 in 
+                if not (is_valid_move (grid) (x) (y) (single)) then false
+                else  are_singles_valid_aux xs 
+in are_singles_valid_aux lst_singles
 
 
 
+let nova_grid i j element grid = 
+    let new_grid = copy_grid grid in
+    new_grid.(i).(j) <- Some element; 
+    new_grid 
 
 
 
+let izpolni_enojce lst_enojci grid = 
+  let nov_grid =copy_grid grid in
+  let rec izpolni_enojce_aux = function
+      | [] -> nov_grid
+      | s:: xs -> let x,y = s.loc in 
+                  let enojec = List.nth (s.possible) 0 in 
+                  nov_grid.(x).(y) <- Some enojec;
+                  izpolni_enojce_aux xs
+  in izpolni_enojce_aux lst_enojci
 
 
-
+  let rec process_data data =
+    match data with
+    | Some x -> Array.map (Array.map (fun y -> y + 1)) x
+    | None -> [||]
 
 let branch_state (state) = 
-  if state.za_resevanje =[||] then preglej_unije_podmnozic_minov state ;
+  if state.za_resevanje =[||] then preglej_unije_podmnozic_minov state;
   print_state(state);
   print_newline ();
-  let update_av = selection_sort_array state.za_resevanje in
-  match odstrani_enake_in_uredi_enojne (update_av) with 
+  let update_av = selection_sort_array state.za_resevanje in 
+  let urejeni = odstrani_enake_in_uredi_enojne (update_av) in 
+  match urejeni with 
   | None -> None 
   | Some([],[]) -> None
-  | Some([], drugi) -> let izbira = List.nth drugi 0 in 
+  | Some([], drugi) ->  let izbira = List.nth drugi 0 in 
                         (*ze prej bi prislo do napake ce bi bila prazni possiblesi*)
                        let element = List.nth (izbira.possible) 0 in
                        let x,y = izbira.loc in
-                       let izpolnjena_cell = nova_grid (x) (y) (element) state.current_grid in
-                       let ostali = List.filter (fun x -> x <> element) izbira.possible in 
-                       let novi_av = {loc=(x,y); possible=ostali} in 
-                       let za_resevanje = odstrani (izbira) (update_av) (novi_av) in 
-                       let novi_state_za_resevanje = [|[|za_resevanje|]|] in
-                       let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ; za_resevanje=[||] } in
-                       let state2 = {problem=state.problem; current_grid=copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi;  za_resevanje=novi_state_za_resevanje} in
-                       Some(state1, Some state2)
-  | Some(enojci,_) -> let nova = izpolni_enojce (enojci) state.current_grid in
-                      let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ;za_resevanje=[||] } in
-                      Some(state_od_enojcev,None)
-                      
+                       let izpolnjena_cell = nova_grid (x) (y) (element) (state.current_grid) in 
+                       let box = boxes izpolnjena_cell in 
+                       let boxij = (Array.of_list (box)).(izracun_boxa_iz_koordinat x y) in
+                       if preglej_nov(izpolnjena_cell.(x)) && preglej_nov(izpolnjena_cell.(y)) && preglej_nov(boxij) then 
+                          let ostali = List.filter (fun x -> x <> element) izbira.possible in 
+                          let novi_av = {loc=(x,y); possible=ostali} in 
+                          let za_resevanje = odstrani (izbira) (update_av) (novi_av) in 
+                          let novi_state_za_resevanje = [|[|za_resevanje|]|] in
+                          let state1={problem=state.problem; current_grid=izpolnjena_cell; vrstice=cal_empty Vrstica izpolnjena_cell; stolpci= cal_empty Stolpec izpolnjena_cell; boxi=cal_empty Box izpolnjena_cell ; za_resevanje=[||] } in
+                          let state2 = {problem=state.problem; current_grid=copy_grid state.current_grid; vrstice=state.vrstice; stolpci=state.stolpci; boxi=state.boxi;  za_resevanje=novi_state_za_resevanje} in
+                          Some(state1, Some state2)
+                       else 
+                        None
+  | Some(enojci,_) ->   let nova = izpolni_enojce (enojci) (state.current_grid) in 
+                        if preglej_celo nova then
+                            let state_od_enojcev = {problem=state.problem; current_grid=nova; vrstice=cal_empty Vrstica nova; stolpci= cal_empty Stolpec nova; boxi=cal_empty Box nova ;za_resevanje=[||] } in
+                            Some(state_od_enojcev,None)
+                        else 
+                          None
                        (*mora se odlocit med drugimi possiblesi v listu*)
+
+
 let pridobi_rez  = function
     | None -> [||]
     | Some(st, None) -> [|st|]
@@ -943,7 +983,7 @@ let solu2 = pridobi_rez resitev2
 
 
 let depth = ref 0
- 
+
  (* pogledamo, če trenutno stanje vodi do rešitve *)
  let rec solve_state (state) =
    Printf.printf "Solving state %d\n" !depth;
@@ -981,8 +1021,6 @@ let depth = ref 0
        match solve_state st1 with 
          | Some solution -> Some solution 
          | None -> None
-
-
 
 
 
